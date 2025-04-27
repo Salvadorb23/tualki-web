@@ -12,6 +12,8 @@
     button { background-color: #FF6B35; color: #FFFFFF; border: none; cursor: pointer; }
     button:hover { background-color: #E55A2D; }
   </style>
+  <!-- Cargar la librería de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <section>
@@ -34,7 +36,7 @@
     <button id="publish-btn">Publicar</button>
   </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- Cargar script.js después de la librería de Supabase -->
   <script src="script.js"></script>
 </body>
 </html>
