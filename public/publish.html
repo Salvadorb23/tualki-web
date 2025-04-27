@@ -34,68 +34,7 @@
     <button id="publish-btn">Publicar</button>
   </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const supabase = Supabase.createClient(
-      '[pega tu SUPABASE_URL aquí]',
-      '[pega tu SUPABASE_ANON_KEY aquí]'
-    );
-    window.supabase = supabase;
-
-    document.getElementById('publish-btn').addEventListener('click', async () => {
-      const name = document.getElementById('product-name').value;
-      const description = document.getElementById('product-description').value;
-      const category = document.getElementById('product-category').value;
-      const pricePerDay = parseFloat(document.getElementById('price-per-day').value);
-      const salePrice = document.getElementById('sale-price').value ? parseFloat(document.getElementById('sale-price').value) : null;
-      const file = document.getElementById('product-image').files[0];
-
-      if (!name || !description || !category || !pricePerDay || !file) {
-        alert("Por favor, completa todos los campos obligatorios.");
-        return;
-      }
-
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
-        alert("Debes iniciar sesión para publicar.");
-        return;
-      }
-
-      const fileName = `${userData.user.id}/${Date.now()}_${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('tualki-images')
-        .upload(fileName, file);
-
-      if (uploadError) {
-        alert("Error al subir la imagen: " + uploadError.message);
-        return;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('tualki-images')
-        .getPublicUrl(fileName);
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([
-          {
-            user_id: userData.user.id,
-            name,
-            description,
-            category,
-            price_per_day: pricePerDay,
-            sale_price: salePrice,
-            image_url: urlData.publicUrl
-          }
-        ]);
-
-      if (error) {
-        alert("Error al publicar: " + error.message);
-      } else {
-        alert("Producto publicado con éxito");
-        console.log("Producto:", data);
-      }
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
