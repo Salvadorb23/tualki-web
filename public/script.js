@@ -13,6 +13,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d21ybG9yb21vbXluaWNrcHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgyMjU4ODcsImV4cCI6MjA0MzgwMTg4N30.7zq8gYomc4_0sH4aYem4cG_5d4wW5rT1e1bLq5i5jWY' // Tu clave pública de Supabase
     );
 
+    // Código para la página de registro (signup.html)
+    if (window.location.pathname.includes('signup.html')) {
+        const signupForm = document.getElementById('signup-form');
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password
+                });
+
+                if (error) {
+                    console.error('Error al registrarse:', error.message);
+                    alert('Error al registrarse: ' + error.message);
+                    return;
+                }
+
+                console.log('Usuario registrado:', data);
+                alert('¡Registro exitoso! Por favor, inicia sesión.');
+                window.location.href = 'login.html';
+            });
+        }
+    }
+
+    // Código para la página de inicio de sesión (login.html)
+    if (window.location.pathname.includes('login.html')) {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) {
+                    console.error('Error al iniciar sesión:', error.message);
+                    alert('Error al iniciar sesión: ' + error.message);
+                    return;
+                }
+
+                console.log('Sesión iniciada:', data);
+                alert('¡Inicio de sesión exitoso!');
+                window.location.href = 'index.html';
+            });
+        }
+    }
+
     // Código para la página de publicación (publish.html)
     if (window.location.pathname.includes('publish.html')) {
         const publishForm = document.getElementById('publish-form');
@@ -33,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { data: userData, error: userError } = await supabase.auth.getSession();
                 if (userError || !userData.session) {
                     alert('Por favor, inicia sesión para publicar un producto.');
+                    window.location.href = 'login.html';
                     return;
                 }
                 console.log('Usuario autenticado:', userData.session.user.id);
@@ -81,41 +136,5 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Producto publicado con éxito');
             });
         }
-    }
-
-    // Código para la página de pago (pay.html)
-    if (window.location.pathname.includes('pay.html')) {
-        // Obtener los parámetros de la URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const name = urlParams.get('name');
-        const description = urlParams.get('description');
-        const pricePerDay = urlParams.get('price_per_day');
-        const salePrice = urlParams.get('sale_price');
-
-        // Mostrar los detalles del producto
-        document.getElementById('product-name').textContent = name || 'Producto desconocido';
-        document.getElementById('product-description').textContent = description || 'Sin descripción';
-        document.getElementById('product-price-per-day').textContent = pricePerDay || 'N/A';
-        document.getElementById('product-sale-price').textContent = salePrice || 'N/A';
-
-        // Configurar el botón de Wompi
-        const payButton = document.getElementById('pay-button');
-        payButton.addEventListener('click', () => {
-            const amount = salePrice || pricePerDay; // Usar el precio de venta si existe, si no, el precio por día
-            const wompiCheckout = new WidgetCheckout({
-                currency: 'COP',
-                amountInCents: parseInt(amount) * 100, // Convertir a centavos
-                reference: 'TUALKI-' + Date.now(), // Referencia única para la transacción
-                publicKey: 'TU_CLAVE_PUBLICA_WOMPI', // Reemplaza con tu clave pública de Wompi
-                redirectUrl: 'https://tualki-web.vercel.app/index.html' // URL a la que redirigir después del pago
-            });
-            wompiCheckout.open(function (result) {
-                if (result.status === 'APPROVED') {
-                    alert('¡Pago exitoso!');
-                } else {
-                    alert('Error en el pago: ' + result.status);
-                }
-            });
-        });
     }
 });
