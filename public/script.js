@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inicializar Supabase
     const supabase = window.supabase.createClient(
-        'https://vvwmrloromomynyckppq.supabase.co', // Tu URL de Supabase
+        'https://vrvwmlromomnynckppqz.supabase.co', // Tu URL de Supabase
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d21ybG9yb21vbXluaWNrcHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgyMjU4ODcsImV4cCI6MjA0MzgwMTg4N30.7zq8gYomc4_0sH4aYem4cG_5d4wW5rT1e1bLq5i5jWY' // Tu clave pública de Supabase
     );
 
