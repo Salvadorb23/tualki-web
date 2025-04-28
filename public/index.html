@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tualki - Inicio</title>
+    <title>Tualki - Publicar Producto</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="script.js" defer></script>
@@ -21,18 +21,33 @@
         </div>
     </div>
     <div class="container">
-        <h1>Alquila lo que necesites con Tualki</h1>
-        <p>Encuentra productos para alquilar de forma fácil y segura. Si lo deseas, también puedes comprar algunos productos.</p>
-        <h2>Productos disponibles para alquilar</h2>
-        <div class="product">
-            <div class="details">
-                <h3>Play Station 5</h3>
-                <p>Play en perfecto estado para que le des una pela a tu hermano.</p>
-                <p class="rental-price">Precio por día: 25000 COP</p>
-                <p class="sale-price">Precio de venta (opcional): 2300000 COP</p>
-                <a href="pay.html?name=Play%20Station%205&description=Play%20en%20perfecto%20estado%20para%20que%20le%20des%20una%20pela%20a%20tu%20hermano&price_per_day=25000&sale_price=2300000" class="button">Alquilar o Comprar</a>
-            </div>
-        </div>
+        <h1>Publica un producto para alquilar</h1>
+        <p>Ingresa los detalles de tu producto. El precio de venta es opcional.</p>
+        <form id="publish-form">
+            <label for="name">Nombre del producto</label>
+            <input type="text" id="name" required placeholder="Ej: Play Station 5">
+
+            <label for="description">Descripción</label>
+            <textarea id="description" required placeholder="Describe tu producto..."></textarea>
+
+            <label for="category">Categoría</label>
+            <select id="category" required>
+                <option value="Electrónica">Electrónica</option>
+                <option value="Ropa">Ropa</option>
+                <option value="Hogar">Hogar</option>
+            </select>
+
+            <label for="price_per_day">Precio por día (COP)</label>
+            <input type="number" id="price_per_day" required placeholder="Ej: 25000">
+
+            <label for="sale_price">Precio de venta (opcional, COP)</label>
+            <input type="number" id="sale_price" placeholder="Ej: 2300000">
+
+            <label for="image">Imagen del producto</label>
+            <input type="file" id="image" accept="image/*" required>
+
+            <button type="submit">Publicar</button>
+        </form>
     </div>
 </body>
 </html>
