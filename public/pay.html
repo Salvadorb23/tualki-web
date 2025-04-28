@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tualki - Pagar</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://checkout.wompi.co/widget.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="header">
+        <h1>Tualki</h1>
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="publish.html">Publicar un producto</a>
+        </div>
+        <div class="auth-links">
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="signup.html">Registrarse</a>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Alquilar o Comprar Producto</h1>
+        <p>Confirma los detalles del producto antes de proceder al pago.</p>
+        <div id="product-details" class="product">
+            <div class="details">
+                <h2 id="product-name"></h2>
+                <p id="product-description"></p>
+                <p class="rental-price"><strong>Precio por día:</strong> <span id="product-price-per-day"></span> COP</p>
+                <p class="sale-price"><strong>Precio de venta (opcional):</strong> <span id="product-sale-price"></span> COP</p>
+            </div>
+        </div>
+        <button id="pay-button">Pagar con Wompi</button>
+    </div>
+</body>
+</html>
