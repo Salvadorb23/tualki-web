@@ -5,26 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tualki - Inicio</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Añadir el script de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
     <div class="header">
         <h1>Tualki</h1>
-        <a href="index.html">Inicio</a>
-        <a href="publish.html">Publicar un producto</a>
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="publish.html">Publicar un producto</a>
+        </div>
+        <div class="auth-links">
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="signup.html">Registrarse</a>
+        </div>
     </div>
     <div class="container">
-        <h1>Bienvenido a Tualki</h1>
-        <p>Aquí puedes alquilar o vender productos de forma fácil y segura.</p>
-        <h2>Productos disponibles</h2>
-        <div>
-            <h3>Play Station 5</h3>
-            <p>Play en perfecto estado para que le des una pela a tu hermano.</p>
-            <p><strong>Precio por día:</strong> 25000 COP</p>
-            <p><strong>Precio de venta:</strong> 2300000 COP</p>
-            <a href="pay.html?name=Play%20Station%205&description=Play%20en%20perfecto%20estado%20para%20que%20le%20des%20una%20pela%20a%20tu%20hermano&price_per_day=25000&sale_price=2300000">Pagar ahora</a>
+        <h1>Alquila lo que necesites con Tualki</h1>
+        <p>Encuentra productos para alquilar de forma fácil y segura. Si lo deseas, también puedes comprar algunos productos.</p>
+        <h2>Productos disponibles para alquilar</h2>
+        <div class="product">
+            <div class="details">
+                <h3>Play Station 5</h3>
+                <p>Play en perfecto estado para que le des una pela a tu hermano.</p>
+                <p class="rental-price">Precio por día: 25000 COP</p>
+                <p class="sale-price">Precio de venta (opcional): 2300000 COP</p>
+                <a href="pay.html?name=Play%20Station%205&description=Play%20en%20perfecto%20estado%20para%20que%20le%20des%20una%20pela%20a%20tu%20hermano&price_per_day=25000&sale_price=2300000" class="button">Alquilar o Comprar</a>
+            </div>
         </div>
     </div>
 </body>
