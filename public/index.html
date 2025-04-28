@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tualki - Publicar Producto</title>
+    <title>Tualki - Inicio</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="script.js" defer></script>
@@ -21,33 +21,9 @@
         </div>
     </div>
     <div class="container">
-        <h1>Publica un producto para alquilar</h1>
-        <p>Ingresa los detalles de tu producto. El precio de venta es opcional.</p>
-        <form id="publish-form">
-            <label for="name">Nombre del producto</label>
-            <input type="text" id="name" required placeholder="Ej: Play Station 5">
-
-            <label for="description">Descripción</label>
-            <textarea id="description" required placeholder="Describe tu producto..."></textarea>
-
-            <label for="category">Categoría</label>
-            <select id="category" required>
-                <option value="Electrónica">Electrónica</option>
-                <option value="Ropa">Ropa</option>
-                <option value="Hogar">Hogar</option>
-            </select>
-
-            <label for="price_per_day">Precio por día (COP)</label>
-            <input type="number" id="price_per_day" required placeholder="Ej: 25000">
-
-            <label for="sale_price">Precio de venta (opcional, COP)</label>
-            <input type="number" id="sale_price" placeholder="Ej: 2300000">
-
-            <label for="image">Imagen del producto</label>
-            <input type="file" id="image" accept="image/*" required>
-
-            <button type="submit">Publicar</button>
-        </form>
+        <h1>Productos disponibles para alquilar</h1>
+        <p>Explora los productos disponibles para alquilar o comprar.</p>
+        <div id="products-list" class="products-grid"></div>
     </div>
 </body>
 </html>
