@@ -1,4 +1,3 @@
-// Esperar a que la página esté cargada
 document.addEventListener('DOMContentLoaded', async () => {
     // Verificar si Supabase está cargado
     if (!window.supabase) {
@@ -12,6 +11,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         'https://vvwmrloromomynyckppq.supabase.co', // Tu URL de Supabase
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d21ybG9yb21vbXluaWNrcHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgyMjU4ODcsImV4cCI6MjA0MzgwMTg4N30.7zq8gYomc4_0sH4aYem4cG_5d4wW5rT1e1bLq5i5jWY' // Tu clave pública de Supabase
     );
+
+    // Código para listar productos (index.html)
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        const productsList = document.getElementById('products-list');
+        if (productsList) {
+            const { data: products, error } = await supabase
+                .from('products')
+                .select('*');
+
+            if (error) {
+                console.error('Error al cargar productos:', error.message);
+                productsList.innerHTML = '<p>Error al cargar los productos.</p>';
+                return;
+            }
+
+            if (products.length === 0) {
+                productsList.innerHTML = '<p>No hay productos disponibles.</p>';
+                return;
+            }
+
+            productsList.innerHTML = products.map(product => `
+                <div class="product">
+                    <div class="details">
+                        <h3>${product.name}</h3>
+                        <p>${product.description}</p>
+                        <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
+                        ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
+                        <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}" class="button">Alquilar o Comprar</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
 
     // Código para la página de registro (signup.html)
     if (window.location.pathname.includes('signup.html')) {
@@ -136,5 +168,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Producto publicado con éxito');
             });
         }
+    }
+
+    // Código para la página de pago (pay.html)
+    if (window.location.pathname.includes('pay.html')) {
+        // Obtener los parámetros de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const name = urlParams.get('name');
+        const description = urlParams.get('description');
+        const pricePerDay = urlParams.get('price_per_day');
+        const salePrice = urlParams.get('sale_price');
+
+        // Mostrar los detalles del producto
+        document.getElementById('product-name').textContent = name || 'Producto desconocido';
+        document.getElementById('product-description').textContent = description || 'Sin descripción';
+        document.getElementById('product-price-per-day').textContent = pricePerDay || 'N/A';
+        document.getElementById('product-sale-price').textContent = salePrice || 'N/A';
+
+        // Configurar el botón de Wompi
+        const payButton = document.getElementById('pay-button');
+        payButton.addEventListener('click', () => {
+            const amount = salePrice || pricePerDay; // Usar el precio de venta si existe, si no, el precio por día
+            const wompiCheckout = new WidgetCheckout({
+                currency: 'COP',
+                amountInCents: parseInt(amount) * 100, // Convertir a centavos
+                reference: 'TUALKI-' + Date.now(), // Referencia única para la transacción
+                publicKey: 'TU_CLAVE_PUBLICA_WOMPI', // Reemplaza con tu clave pública de Wompi
+                redirectUrl: 'https://tualki-web.vercel.app/index.html' // URL a la que redirigir después del pago
+            });
+            wompiCheckout.open(function (result) {
+                if (result.status === 'APPROVED') {
+                    alert('¡Pago exitoso!');
+                } else {
+                    alert('Error en el pago: ' + result.status);
+                }
+            });
+        });
     }
 });
