@@ -1,145 +1,121 @@
-// Verificamos si la librería de Supabase está cargada
-if (typeof supabase === 'undefined') {
-  console.error("Error: La librería de Supabase no está cargada.");
-  alert("Error: No se pudo cargar Supabase. Revisa la consola para más detalles.");
-} else {
-  console.log("Librería de Supabase cargada correctamente");
-}
-
-// Inicializa Supabase
-const supabaseUrl = 'https://vrvwmlromomnynckppqz.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-window.supabase = supabaseClient;
-console.log("Supabase inicializado");
-
-// Registro
-const registerBtn = document.getElementById('register-btn');
-if (registerBtn) {
-  console.log("Botón de registro encontrado");
-  registerBtn.addEventListener('click', async () => {
-    console.log("Botón de registro clickeado");
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    console.log("Correo:", email, "Contraseña:", password);
-
-    try {
-      const { data, error } = await window.supabase.auth.signUp({
-        email,
-        password
-      });
-
-      if (error) {
-        console.log("Error al registrar:", error.message);
-        alert("Error al registrar: " + error.message);
-      } else {
-        console.log("Registro exitoso:", data.user);
-        alert("Registro exitoso");
-      }
-    } catch (err) {
-      console.log("Error inesperado:", err);
-      alert("Error inesperado: " + err.message);
-    }
-  });
-} else {
-  console.log("Botón de registro NO encontrado");
-}
-
-// Inicio de sesión
-const loginBtn = document.getElementById('login-btn');
-if (loginBtn) {
-  console.log("Botón de inicio de sesión encontrado");
-  loginBtn.addEventListener('click', async () => {
-    console.log("Botón de inicio de sesión clickeado");
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    console.log("Correo:", email, "Contraseña:", password);
-
-    try {
-      const { data, error } = await window.supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.log("Error al iniciar sesión:", error.message);
-        alert("Error al iniciar sesión: " + error.message);
-      } else {
-        console.log("Inicio de sesión exitoso:", data.user);
-        alert("Inicio de sesión exitoso");
-      }
-    } catch (err) {
-      console.log("Error inesperado:", err);
-      alert("Error inesperado: " + err.message);
-    }
-  });
-} else {
-  console.log("Botón de inicio de sesión NO encontrado");
-}
-
-// Publicar producto
-const publishBtn = document.getElementById('publish-btn');
-if (publishBtn) {
-  console.log("Botón de publicar encontrado");
-  publishBtn.addEventListener('click', async () => {
-    console.log("Botón de publicar clickeado");
-    const name = document.getElementById('product-name').value;
-    const description = document.getElementById('product-description').value;
-    const category = document.getElementById('product-category').value;
-    const pricePerDay = parseFloat(document.getElementById('price-per-day').value);
-    const salePrice = document.getElementById('sale-price').value ? parseFloat(document.getElementById('sale-price').value) : null;
-    const file = document.getElementById('product-image').files[0];
-
-    if (!name || !description || !category || !pricePerDay || !file) {
-      console.log("Faltan campos obligatorios");
-      alert("Por favor, completa todos los campos obligatorios.");
-      return;
+// Esperar a que la página esté cargada
+document.addEventListener('DOMContentLoaded', async () => {
+    // Verificar si Supabase está cargado
+    if (!window.supabase) {
+        console.error('Error: La librería de Supabase no está cargada.');
+        alert('Error: No se pudo cargar Supabase. Revisa la consola para más detalles.');
+        return;
     }
 
-    const { data: userData, error: userError } = await window.supabase.auth.getUser();
-    if (userError || !userData.user) {
-      console.log("Usuario no autenticado");
-      alert("Debes iniciar sesión para publicar.");
-      return;
-    }
+    // Inicializar Supabase
+    const supabase = window.supabase.createClient(
+        'https://vvwmrloromomynyckppq.supabase.co', // Tu URL de Supabase
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d21ybG9yb21vbXluaWNrcHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgyMjU4ODcsImV4cCI6MjA0MzgwMTg4N30.7zq8gYomc4_0sH4aYem4cG_5d4wW5rT1e1bLq5i5jWY' // Tu clave pública de Supabase
+    );
 
-    const fileName = `${userData.user.id}/${Date.now()}_${file.name}`;
-    const { data: uploadData, error: uploadError } = await window.supabase.storage
-      .from('tualki-images')
-      .upload(fileName, file);
+    // Código para la página de publicación (publish.html)
+    if (window.location.pathname.includes('publish.html')) {
+        const publishForm = document.getElementById('publish-form');
+        if (publishForm) {
+            publishForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('Botón de publicar clickeado');
 
-    if (uploadError) {
-      console.log("Error al subir la imagen:", uploadError.message);
-      alert("Error al subir la imagen: " + uploadError.message);
-      return;
-    }
+                // Obtener datos del formulario
+                const name = document.getElementById('name').value;
+                const description = document.getElementById('description').value;
+                const category = document.getElementById('category').value;
+                const pricePerDay = parseFloat(document.getElementById('price_per_day').value);
+                const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElementById('sale_price').value) : null;
+                const imageFile = document.getElementById('image').files[0];
 
-    const { data: urlData } = window.supabase.storage
-      .from('tualki-images')
-      .getPublicUrl(fileName);
+                // Verificar usuario autenticado
+                const { data: userData, error: userError } = await supabase.auth.getSession();
+                if (userError || !userData.session) {
+                    alert('Por favor, inicia sesión para publicar un producto.');
+                    return;
+                }
+                console.log('Usuario autenticado:', userData.session.user.id);
 
-    const { data, error } = await window.supabase
-      .from('products')
-      .insert([
-        {
-          user_id: userData.user.id,
-          name,
-          description,
-          category,
-          price_per_day: pricePerDay,
-          sale_price: salePrice,
-          image_url: urlData.publicUrl
+                // Subir la imagen
+                console.log('Intentando subir imagen:', imageFile.name);
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('tualki-images')
+                    .upload(`${Date.now()}_${imageFile.name}`, imageFile);
+
+                if (uploadError) {
+                    console.error('Error al subir la imagen:', uploadError.message);
+                    alert('Error al subir la imagen: ' + uploadError.message);
+                    return;
+                }
+                console.log('Imagen subida con éxito:', uploadData);
+
+                // Obtener la URL pública de la imagen
+                const { data: urlData } = supabase.storage
+                    .from('tualki-images')
+                    .getPublicUrl(uploadData.path);
+                console.log('URL de la imagen:', urlData.publicUrl);
+
+                // Guardar el producto en la tabla 'products'
+                const { data, error } = await supabase
+                    .from('products')
+                    .insert([
+                        {
+                            user_id: userData.session.user.id,
+                            name,
+                            description,
+                            category,
+                            price_per_day: pricePerDay,
+                            sale_price: salePrice,
+                            image_url: urlData.publicUrl
+                        }
+                    ]);
+
+                if (error) {
+                    console.error('Error al publicar:', error.message);
+                    alert('Error al publicar: ' + error.message);
+                    return;
+                }
+
+                console.log('Producto publicado con éxito:', data);
+                alert('Producto publicado con éxito');
+            });
         }
-      ]);
-
-    if (error) {
-      console.log("Error al publicar:", error.message);
-      alert("Error al publicar: " + error.message);
-    } else {
-      console.log("Producto publicado con éxito:", data);
-      alert("Producto publicado con éxito");
     }
-  });
-} else {
-  console.log("Botón de publicar NO encontrado");
-}
+
+    // Código para la página de pago (pay.html)
+    if (window.location.pathname.includes('pay.html')) {
+        // Obtener los parámetros de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const name = urlParams.get('name');
+        const description = urlParams.get('description');
+        const pricePerDay = urlParams.get('price_per_day');
+        const salePrice = urlParams.get('sale_price');
+
+        // Mostrar los detalles del producto
+        document.getElementById('product-name').textContent = name || 'Producto desconocido';
+        document.getElementById('product-description').textContent = description || 'Sin descripción';
+        document.getElementById('product-price-per-day').textContent = pricePerDay || 'N/A';
+        document.getElementById('product-sale-price').textContent = salePrice || 'N/A';
+
+        // Configurar el botón de Wompi
+        const payButton = document.getElementById('pay-button');
+        payButton.addEventListener('click', () => {
+            const amount = salePrice || pricePerDay; // Usar el precio de venta si existe, si no, el precio por día
+            const wompiCheckout = new WidgetCheckout({
+                currency: 'COP',
+                amountInCents: parseInt(amount) * 100, // Convertir a centavos
+                reference: 'TUALKI-' + Date.now(), // Referencia única para la transacción
+                publicKey: 'TU_CLAVE_PUBLICA_WOMPI', // Reemplaza con tu clave pública de Wompi
+                redirectUrl: 'https://tualki-web.vercel.app/index.html' // URL a la que redirigir después del pago
+            });
+            wompiCheckout.open(function (result) {
+                if (result.status === 'APPROVED') {
+                    alert('¡Pago exitoso!');
+                } else {
+                    alert('Error en el pago: ' + result.status);
+                }
+            });
+        });
+    }
+});
