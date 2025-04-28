@@ -13,38 +13,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
 
     // Código para listar productos (index.html)
-    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-        const productsList = document.getElementById('products-list');
-        if (productsList) {
-            const { data: products, error } = await supabase
-                .from('products')
-                .select('*');
+if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+    const productsList = document.getElementById('products-list');
+    if (productsList) {
+        const { data: products, error } = await supabase
+            .from('products')
+            .select('*');
 
-            if (error) {
-                console.error('Error al cargar productos:', error.message);
-                productsList.innerHTML = '<p>Error al cargar los productos.</p>';
-                return;
-            }
-
-            if (products.length === 0) {
-                productsList.innerHTML = '<p>No hay productos disponibles.</p>';
-                return;
-            }
-
-            productsList.innerHTML = products.map(product => `
-                <div class="product">
-                    <div class="details">
-                        <h3>${product.name}</h3>
-                        <p>${product.description}</p>
-                        <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
-                        ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
-                        <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}" class="button">Alquilar o Comprar</a>
-                    </div>
-                </div>
-            `).join('');
+        if (error) {
+            console.error('Error al cargar productos:', error.message);
+            productsList.innerHTML = '<p>Error al cargar los productos.</p>';
+            return;
         }
-    }
 
+        if (products.length === 0) {
+            productsList.innerHTML = '<p>No hay productos disponibles.</p>';
+            return;
+        }
+
+        productsList.innerHTML = products.map(product => `
+            <div class="product">
+                <div class="details">
+                    <h3>${product.name}</h3>
+                    <p>${product.description}</p>
+                    <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
+                    ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
+                    <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}" class="button">Alquilar</a>
+                    ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+}
+    
     // Código para la página de registro (signup.html)
     if (window.location.pathname.includes('signup.html')) {
         const signupForm = document.getElementById('signup-form');
