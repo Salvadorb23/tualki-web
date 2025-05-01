@@ -23,6 +23,16 @@
     <div class="container">
         <h1>Productos disponibles para alquilar</h1>
         <p>Explora los productos disponibles para alquilar o comprar.</p>
+        <div class="search-filter">
+            <input type="text" id="search-bar" placeholder="Buscar productos...">
+            <select id="category-filter">
+                <option value="">Todas las categorías</option>
+                <option value="Electrónica">Electrónica</option>
+                <option value="Ropa">Ropa</option>
+                <option value="Hogar">Hogar</option>
+                <option value="Otros">Otros</option>
+            </select>
+        </div>
         <div id="products-list" class="products-grid"></div>
     </div>
 </body>
