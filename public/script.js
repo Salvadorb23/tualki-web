@@ -194,7 +194,7 @@ if (window.location.pathname.includes('index.html') || window.location.pathname 
                 currency: 'COP',
                 amountInCents: parseInt(amount) * 100, // Convertir a centavos
                 reference: 'TUALKI-' + Date.now(), // Referencia única para la transacción
-                publicKey: 'TU_CLAVE_PUBLICA_WOMPI', // Reemplaza con tu clave pública de Wompi
+                publicKey: 'pub_prod_OPJOToiCYujZj4NTZ2fvCOVSKo7XclCX', // Reemplaza con tu clave pública de Wompi
                 redirectUrl: 'https://tualki-web.vercel.app/index.html' // URL a la que redirigir después del pago
             });
             wompiCheckout.open(function (result) {
