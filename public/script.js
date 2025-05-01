@@ -12,40 +12,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE' // Tu clave pública de Supabase
     );
 
-    // Código para listar productos (index.html)
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-        const productsList = document.getElementById('products-list');
-        if (productsList) {
-            const { data: products, error } = await supabase
-                .from('products')
-                .select('*');
+    const productsList = document.getElementById('products-list');
+    if (productsList) {
+        const { data: products, error } = await supabase
+            .from('products')
+            .select('*');
 
-            if (error) {
-                console.error('Error al cargar productos:', error.message);
-                productsList.innerHTML = '<p>Error al cargar los productos.</p>';
-                return;
-            }
-
-            if (products.length === 0) {
-                productsList.innerHTML = '<p>No hay productos disponibles.</p>';
-                return;
-            }
-
-            productsList.innerHTML = products.map(product => `
-                <div class="product">
-                    <div class="details">
-                        <h3>${product.name}</h3>
-                        <p>${product.description}</p>
-                        <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
-                        ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
-                        <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}" class="button">Alquilar</a>
-                        ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
-                    </div>
-                </div>
-            `).join('');
+        if (error) {
+            console.error('Error al cargar productos:', error.message);
+            productsList.innerHTML = '<p>Error al cargar los productos.</p>';
+            return;
         }
-    }
 
+        if (products.length === 0) {
+            productsList.innerHTML = '<p>No hay productos disponibles.</p>';
+            return;
+        }
+
+        productsList.innerHTML = products.map(product => `
+            <div class="product">
+                ${product.image_url ? `<img src="${product.image_url}" alt="${product.name}" class="product-image">` : ''}
+                <div class="details">
+                    <h3>${product.name}</h3>
+                    <p>${product.description}</p>
+                    <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
+                    ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
+                    <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}" class="button">Alquilar</a>
+                    ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+}
+    
     // Código para la página de registro (signup.html)
     if (window.location.pathname.includes('signup.html')) {
         const signupForm = document.getElementById('signup-form');
