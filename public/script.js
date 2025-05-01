@@ -12,16 +12,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE' // Tu clave pública de Supabase
     );
 
-    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+   if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
     const productsList = document.getElementById('products-list');
-    if (productsList) {
-        const { data: products, error } = await supabase
-            .from('products')
-            .select('*');
+    const searchBar = document.getElementById('search-bar');
+    const categoryFilter = document.getElementById('category-filter');
+
+    const loadProducts = async () => {
+        let query = supabase.from('products').select('*');
+
+        const searchTerm = searchBar.value.toLowerCase();
+        const category = categoryFilter.value;
+
+        if (searchTerm) {
+            query = query.ilike('name', `%${searchTerm}%`);
+        }
+
+        if (category) {
+            query = query.eq('category', category);
+        }
+
+        const { data: products, error } = await query;
 
         if (error) {
             console.error('Error al cargar productos:', error.message);
-            productsList.innerHTML = '<p>Error al cargar los productos.</p>';
+            productsList.innerHTML = '<p>Error al cargar los productos: ' + error.message + '</p>';
             return;
         }
 
@@ -43,6 +57,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
         `).join('');
+    };
+
+    if (productsList) {
+        await loadProducts();
+        searchBar.addEventListener('input', loadProducts);
+        categoryFilter.addEventListener('change', loadProducts);
     }
 }
     
