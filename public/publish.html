@@ -5,15 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tualki - Publicar Producto</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Añadir el script de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
     <div class="header">
         <h1>Tualki</h1>
-        <a href="index.html">Inicio</a>
-        <a href="publish.html">Publicar un producto</a>
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="publish.html">Publicar un producto</a>
+        </div>
+        <div class="auth-links">
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="signup.html">Registrarse</a>
+        </div>
     </div>
     <div class="container">
         <h1>Publicar un producto</h1>
@@ -29,6 +34,7 @@
                 <option value="Electrónica">Electrónica</option>
                 <option value="Ropa">Ropa</option>
                 <option value="Hogar">Hogar</option>
+                <option value="Otros">Otros</option>
             </select>
 
             <label for="price_per_day">Precio por día (COP)</label>
