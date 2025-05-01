@@ -1,209 +1,122 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    // Verificar si Supabase está cargado
-    if (!window.supabase) {
-        console.error('Error: La librería de Supabase no está cargada.');
-        alert('Error: No se pudo cargar Supabase. Revisa la consola para más detalles.');
+// Código para la página de pago (pay.html)
+if (window.location.pathname.includes('pay.html')) {
+    const hasProfile = await requireProfile();
+    if (!hasProfile) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name');
+    const description = urlParams.get('description');
+    const pricePerDay = parseFloat(urlParams.get('price_per_day'));
+    const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
+    const action = urlParams.get('action');
+    const productId = urlParams.get('product_id');
+
+    const actionTitle = document.getElementById('action-title');
+    const productName = document.getElementById('product-name');
+    const productDescription = document.getElementById('product-description');
+    const productPrice = document.getElementById('product-price');
+    const photoGallery = document.getElementById('photo-gallery');
+    const payButton = document.getElementById('pay-button');
+
+    // Cargar fotos del producto
+    const { data: product, error } = await supabase
+        .from('products')
+        .select('photos')
+        .eq('id', productId)
+        .single();
+
+    if (error) {
+        console.error('Error al cargar las fotos:', error.message);
+    } else if (product.photos && product.photos.length > 0) {
+        photoGallery.innerHTML = product.photos.map(photo => `
+            <img src="${photo}" alt="${name}">
+        `).join('');
+    }
+
+    // Configurar el título y el precio según la acción
+    let displayPrice;
+    if (action === 'rent') {
+        actionTitle.textContent = 'Alquilar Producto';
+        displayPrice = pricePerDay;
+    } else if (action === 'buy') {
+        actionTitle.textContent = 'Comprar Producto';
+        displayPrice = salePrice;
+    } else {
+        actionTitle.textContent = 'Error';
+        displayPrice = 0;
+        productPrice.textContent = 'Precio no disponible';
         return;
     }
 
-    // Inicializar Supabase
-    const supabase = window.supabase.createClient(
-        'https://vrvwmlromomnynckppqz.supabase.co', // Tu URL de Supabase
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE' // Tu clave pública de Supabase
-    );
+    productName.textContent = name;
+    productDescription.textContent = description;
+    productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
 
-    // Código para listar productos (index.html)
-if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-    const productsList = document.getElementById('products-list');
-    if (productsList) {
-        const { data: products, error } = await supabase
-            .from('products')
-            .select('*');
+    payButton.addEventListener('click', async () => {
+        const price = action === 'rent' ? pricePerDay : salePrice;
+        const commissionRate = 0.1; // 10% de comisión
+        const commission = price * commissionRate;
+        const amountToPay = price + commission; // Total que paga el usuario
 
-        if (error) {
-            console.error('Error al cargar productos:', error.message);
-            productsList.innerHTML = '<p>Error al cargar los productos.</p>';
-            return;
-        }
-
-        if (products.length === 0) {
-            productsList.innerHTML = '<p>No hay productos disponibles.</p>';
-            return;
-        }
-
-        productsList.innerHTML = products.map(product => `
-            <div class="product">
-                <div class="details">
-                    <h3>${product.name}</h3>
-                    <p>${product.description}</p>
-                    <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
-                    ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
-                    <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}" class="button">Alquilar</a>
-                    ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
-                </div>
-            </div>
-        `).join('');
-    }
-}
-    
-    // Código para la página de registro (signup.html)
-    if (window.location.pathname.includes('signup.html')) {
-        const signupForm = document.getElementById('signup-form');
-        if (signupForm) {
-            signupForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password
-                });
-
-                if (error) {
-                    console.error('Error al registrarse:', error.message);
-                    alert('Error al registrarse: ' + error.message);
-                    return;
-                }
-
-                console.log('Usuario registrado:', data);
-                alert('¡Registro exitoso! Por favor, inicia sesión.');
-                window.location.href = 'login.html';
-            });
-        }
-    }
-
-    // Código para la página de inicio de sesión (login.html)
-    if (window.location.pathname.includes('login.html')) {
-        const loginForm = document.getElementById('login-form');
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-
-                if (error) {
-                    console.error('Error al iniciar sesión:', error.message);
-                    alert('Error al iniciar sesión: ' + error.message);
-                    return;
-                }
-
-                console.log('Sesión iniciada:', data);
-                alert('¡Inicio de sesión exitoso!');
-                window.location.href = 'index.html';
-            });
-        }
-    }
-
-    // Código para la página de publicación (publish.html)
-    if (window.location.pathname.includes('publish.html')) {
-        const publishForm = document.getElementById('publish-form');
-        if (publishForm) {
-            publishForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                console.log('Botón de publicar clickeado');
-
-                // Obtener datos del formulario
-                const name = document.getElementById('name').value;
-                const description = document.getElementById('description').value;
-                const category = document.getElementById('category').value;
-                const pricePerDay = parseFloat(document.getElementById('price_per_day').value);
-                const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElementById('sale_price').value) : null;
-                const imageFile = document.getElementById('image').files[0];
-
-                // Verificar usuario autenticado
-                const { data: userData, error: userError } = await supabase.auth.getSession();
-                if (userError || !userData.session) {
-                    alert('Por favor, inicia sesión para publicar un producto.');
-                    window.location.href = 'login.html';
-                    return;
-                }
-                console.log('Usuario autenticado:', userData.session.user.id);
-
-                // Subir la imagen
-                console.log('Intentando subir imagen:', imageFile.name);
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('tualki-images')
-                    .upload(`${Date.now()}_${imageFile.name}`, imageFile);
-
-                if (uploadError) {
-                    console.error('Error al subir la imagen:', uploadError.message);
-                    alert('Error al subir la imagen: ' + uploadError.message);
-                    return;
-                }
-                console.log('Imagen subida con éxito:', uploadData);
-
-                // Obtener la URL pública de la imagen
-                const { data: urlData } = supabase.storage
-                    .from('tualki-images')
-                    .getPublicUrl(uploadData.path);
-                console.log('URL de la imagen:', urlData.publicUrl);
-
-                // Guardar el producto en la tabla 'products'
-                const { data, error } = await supabase
-                    .from('products')
-                    .insert([
-                        {
-                            user_id: userData.session.user.id,
-                            name,
-                            description,
-                            category,
-                            price_per_day: pricePerDay,
-                            sale_price: salePrice,
-                            image_url: urlData.publicUrl
-                        }
-                    ]);
-
-                if (error) {
-                    console.error('Error al publicar:', error.message);
-                    alert('Error al publicar: ' + error.message);
-                    return;
-                }
-
-                console.log('Producto publicado con éxito:', data);
-                alert('Producto publicado con éxito');
-            });
-        }
-    }
-
-    // Código para la página de pago (pay.html)
-    if (window.location.pathname.includes('pay.html')) {
-        // Obtener los parámetros de la URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const name = urlParams.get('name');
-        const description = urlParams.get('description');
-        const pricePerDay = urlParams.get('price_per_day');
-        const salePrice = urlParams.get('sale_price');
-
-        // Mostrar los detalles del producto
-        document.getElementById('product-name').textContent = name || 'Producto desconocido';
-        document.getElementById('product-description').textContent = description || 'Sin descripción';
-        document.getElementById('product-price-per-day').textContent = pricePerDay || 'N/A';
-        document.getElementById('product-sale-price').textContent = salePrice || 'N/A';
-
-        // Configurar el botón de Wompi
-        const payButton = document.getElementById('pay-button');
-        payButton.addEventListener('click', () => {
-            const amount = salePrice || pricePerDay; // Usar el precio de venta si existe, si no, el precio por día
-            const wompiCheckout = new WidgetCheckout({
-                currency: 'COP',
-                amountInCents: parseInt(amount) * 100, // Convertir a centavos
-                reference: 'TUALKI-' + Date.now(), // Referencia única para la transacción
-                publicKey: 'pub_prod_OPJOToiCYujZj4NTZ2fvCOVSKo7XclCX', // Reemplaza con tu clave pública de Wompi
-                redirectUrl: 'https://tualki-web.vercel.app/index.html' // URL a la que redirigir después del pago
-            });
-            wompiCheckout.open(function (result) {
-                if (result.status === 'APPROVED') {
-                    alert('¡Pago exitoso!');
-                } else {
-                    alert('Error en el pago: ' + result.status);
-                }
-            });
+        // Configurar Wompi
+        const checkout = new WidgetCheckout({
+            currency: 'COP',
+            amountInCents: Math.round(amountToPay * 100), // Wompi usa centavos
+            reference: `TUALKI_${productId}_${Date.now()}`,
+            publicKey: 'pub_prod_OPJOToiCYujZj4NTZ2fvCOVSKo7XclCX', // Ya configurada
+            redirectUrl: 'https://tualki-web.vercel.app/index.html'
         });
-    }
-});
+
+        checkout.open(async (result) => {
+            if (result.status === 'APPROVED') {
+                alert('Pago exitoso. Te contactaremos para coordinar la entrega.');
+                // Obtener el correo del arrendador desde Supabase
+                const { data: product, error } = await supabase
+                    .from('products')
+                    .select('created_by')
+                    .eq('id', productId)
+                    .single();
+
+                if (error) {
+                    console.error('Error al obtener el arrendador:', error.message);
+                    return;
+                }
+
+                const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('email')
+                    .eq('id', product.created_by)
+                    .single();
+
+                if (userError) {
+                    console.error('Error al obtener el correo del arrendador:', userError.message);
+                    return;
+                }
+
+                // Registrar la transacción
+                const { data: session } = await supabase.auth.getSession();
+                const buyerId = session?.user?.id;
+
+                const { error: transactionError } = await supabase
+                    .from('transactions')
+                    .insert({
+                        product_id: productId,
+                        buyer_id: buyerId,
+                        seller_id: product.created_by,
+                        amount: amountToPay,
+                        commission: commission,
+                        status: 'pending'
+                    });
+
+                if (transactionError) {
+                    console.error('Error al registrar la transacción:', transactionError.message);
+                    return;
+                }
+
+                alert(`Por favor, contacta al arrendador en ${user.email} para coordinar la entrega.`);
+            } else {
+                alert('El pago no fue exitoso. Intenta de nuevo.');
+            }
+        });
+    });
+}
