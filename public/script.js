@@ -171,39 +171,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Código para la página de pago (pay.html)
-    if (window.location.pathname.includes('pay.html')) {
-        // Obtener los parámetros de la URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const name = urlParams.get('name');
-        const description = urlParams.get('description');
-        const pricePerDay = urlParams.get('price_per_day');
-        const salePrice = urlParams.get('sale_price');
+// Código para la página de pago (pay.html)
+if (window.location.pathname.includes('pay.html')) {
+    // Obtener los parámetros de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name');
+    const description = urlParams.get('description');
+    const pricePerDay = parseFloat(urlParams.get('price_per_day'));
+    const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
+    const action = urlParams.get('action');
 
-        // Mostrar los detalles del producto
-        document.getElementById('product-name').textContent = name || 'Producto desconocido';
-        document.getElementById('product-description').textContent = description || 'Sin descripción';
-        document.getElementById('product-price-per-day').textContent = pricePerDay || 'N/A';
-        document.getElementById('product-sale-price').textContent = salePrice || 'N/A';
+    // Mostrar los detalles del producto
+    const actionTitle = document.getElementById('action-title');
+    const productName = document.getElementById('product-name');
+    const productDescription = document.getElementById('product-description');
+    const productPrice = document.getElementById('product-price');
 
-        // Configurar el botón de Wompi
-        const payButton = document.getElementById('pay-button');
-        payButton.addEventListener('click', () => {
-            const amount = salePrice || pricePerDay; // Usar el precio de venta si existe, si no, el precio por día
-            const wompiCheckout = new WidgetCheckout({
-                currency: 'COP',
-                amountInCents: parseInt(amount) * 100, // Convertir a centavos
-                reference: 'TUALKI-' + Date.now(), // Referencia única para la transacción
-                publicKey: 'pub_prod_OPJOToiCYujZj4NTZ2fvCOVSKo7XclCX', // Clave pública proporcionada
-                redirectUrl: 'https://tualki-web.vercel.app/index.html' // URL a la que redirigir después del pago
-            });
-            wompiCheckout.open(function (result) {
-                if (result.status === 'APPROVED') {
-                    alert('¡Pago exitoso!');
-                } else {
-                    alert('Error en el pago: ' + result.status);
-                }
-            });
-        });
+    productName.textContent = name || 'Producto desconocido';
+    productDescription.textContent = description || 'Sin descripción';
+
+    // Determinar el precio y el título según la acción
+    let displayPrice;
+    if (action === 'rent') {
+        actionTitle.textContent = 'Alquilar Producto';
+        displayPrice = pricePerDay;
+    } else if (action === 'buy') {
+        actionTitle.textContent = 'Comprar Producto';
+        displayPrice = salePrice;
+    } else {
+        actionTitle.textContent = 'Error';
+        displayPrice = 0;
+        productPrice.textContent = 'Precio no disponible';
+        return;
     }
-});
+
+    productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+
+    // Configurar el botón de Wompi
+    const payButton = document.getElementById('pay-button');
+    payButton.addEventListener('click', () => {
+        const amount = displayPrice; // Usar el precio determinado
+        const wompiCheckout = new WidgetCheckout({
+            currency: 'COP',
+            amountInCents: parseInt(amount) * 100, // Convertir a centavos
+            reference: 'TUALKI-' + Date.now(), // Referencia única para la transacción
+            publicKey: 'pub_prod_OPJOToiCYujZj4NTZ2fvCOVSKo7XclCX',
+            redirectUrl: 'https://tualki-web.vercel.app/index.html' // URL a la que redirigir después del pago
+        });
+        wompiCheckout.open(function (result) {
+            if (result.status === 'APPROVED') {
+                alert('¡Pago exitoso!');
+            } else {
+                alert('Error en el pago: ' + result.status);
+            }
+        });
+    });
+}
