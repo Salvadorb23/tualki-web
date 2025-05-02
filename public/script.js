@@ -146,48 +146,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Código para la página de publicación (publish.html)
-    if (window.location.pathname.includes('publish.html')) {
-        const publishForm = document.getElementById('publish-form');
-        if (publishForm) {
-            publishForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                console.log('Botón de publicar clickeado');
+   if (window.location.pathname.includes('publish.html')) {
+    const publishForm = document.getElementById('publish-form');
+    if (publishForm) {
+        publishForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Botón de publicar clickeado');
 
-                // Obtener datos del formulario
-                const name = document.getElementById('name').value;
-                const description = document.getElementById('description').value;
-                const category = document.getElementById('category').value;
-                const pricePerDay = parseFloat(document.getElementById('price_per_day').value);
-                const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElementById('sale_price').value) : null;
-                const imageFile = document.getElementById('image').files[0];
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const category = document.getElementById('category').value;
+            const pricePerDay = parseFloat(document.getElementById('price_per_day').value);
+            const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElementById('sale_price').value) : null;
+            const imageFile = document.getElementById('image').files[0];
 
-                // Verificar usuario autenticado
-                const { data: userData, error: userError } = await supabase.auth.getSession();
-                if (userError || !userData.session) {
-                    alert('Por favor, inicia sesión para publicar un producto.');
-                    window.location.href = 'login.html';
-                    return;
-                }
-                console.log('Usuario autenticado:', userData.session.user.id);
+            const { data: userData, error: userError } = await supabase.auth.getSession();
+            if (userError || !userData.session) {
+                alert('Por favor, inicia sesión para publicar un producto.');
+                window.location.href = 'login.html';
+                return;
+            }
+            console.log('Usuario autenticado:', userData.session.user.id);
 
-                // Subir la imagen
-                console.log('Intentando subir imagen:', imageFile.name);
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('tualki-images')
-                    .upload(`${Date.now()}_${imageFile.name}`, imageFile);
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('tualki-images')
+                .upload(`${Date.now()}_${imageFile.name}`, imageFile);
 
-                if (uploadError) {
-                    console.error('Error al subir la imagen:', uploadError.message);
-                    alert('Error al subir la imagen: ' + uploadError.message);
-                    return;
-                }
-                console.log('Imagen subida con éxito:', uploadData);
+            if (uploadError) {
+                console.error('Error al subir la imagen:', uploadError.message);
+                alert('Error al subir la imagen: ' + uploadError.message);
+                return;
+            }
 
-                // Obtener la URL pública de la imagen
-                const { data: urlData } = supabase.storage
-                    .from('tualki-images')
-                    .getPublicUrl(uploadData.path);
-                console.log('URL de la imagen:', urlData.publicUrl);
+            const { data: urlData } = supabase.storage
+                .from('tualki-images')
+                .getPublicUrl(uploadData.path);
+            console.log('URL de la imagen:', urlData.publicUrl);
+
+            const { data, error } = await supabase
+                .from('products')
+                .insert([
+                    {
+                        user_id: userData.session.user.id,
+                        name,
+                        description,
+                        category,
+                        price_per_day: pricePerDay,
+                        sale_price: salePrice,
+                        photos: [urlData.publicUrl]
+                    }
+                ]);
+
+            if (error) {
+                console.error('Error al publicar:', error.message);
+                alert('Error al publicar: ' + error.message);
+                return;
+            }
+
+            console.log('Producto publicado con éxito:', data);
+            alert('Producto publicado con éxito');
+            window.location.href = 'index.html';
+        });
+    }
+}
 
                 // Guardar el producto en la tabla 'products'
               // Guardar el producto en la tabla 'products'
