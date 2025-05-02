@@ -190,19 +190,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('URL de la imagen:', urlData.publicUrl);
 
                 // Guardar el producto en la tabla 'products'
-                const { data, error } = await supabase
-                    .from('products')
-                    .insert([
-                        {
-                            user_id: userData.session.user.id,
-                            name,
-                            description,
-                            category,
-                            price_per_day: pricePerDay,
-                            sale_price: salePrice,
-                            image_url: urlData.publicUrl
-                        }
-                    ]);
+              // Guardar el producto en la tabla 'products'
+const { data, error } = await supabase
+    .from('products')
+    .insert([
+        {
+            user_id: userData.session.user.id,
+            name,
+            description,
+            category,
+            price_per_day: pricePerDay,
+            sale_price: salePrice,
+            photos: [urlData.publicUrl] // Guardar como array
+        }
+    ]);
 
                 if (error) {
                     console.error('Error al publicar:', error.message);
