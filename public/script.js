@@ -39,46 +39,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categoryFilter = document.getElementById('category-filter');
 
         const loadProducts = async () => {
-            let query = supabase.from('products').select('*');
+    let query = supabase.from('products').select('*');
 
-            const searchTerm = searchBar.value.toLowerCase();
-            const category = categoryFilter.value;
+    const searchTerm = searchBar.value.toLowerCase();
+    const category = categoryFilter.value;
 
-            if (searchTerm) {
-                query = query.ilike('name', `%${searchTerm}%`);
-            }
+    if (searchTerm) {
+        query = query.ilike('name', `%${searchTerm}%`);
+    }
 
-            if (category) {
-                query = query.eq('category', category);
-            }
+    if (category) {
+        query = query.eq('category', category);
+    }
 
-            const { data: products, error } = await query;
+    const { data: products, error } = await query;
 
-            if (error) {
-                console.error('Error al cargar productos:', error.message);
-                productsList.innerHTML = '<p>Error al cargar los productos: ' + error.message + '</p>';
-                return;
-            }
+    if (error) {
+        console.error('Error al cargar productos:', error.message);
+        productsList.innerHTML = '<p>Error al cargar los productos: ' + error.message + '</p>';
+        return;
+    }
 
-            if (products.length === 0) {
-                productsList.innerHTML = '<p>No hay productos disponibles.</p>';
-                return;
-            }
+    if (products.length === 0) {
+        productsList.innerHTML = '<p>No hay productos disponibles.</p>';
+        return;
+    }
 
-            productsList.innerHTML = products.map(product => `
-                <div class="product">
-                    ${product.image_url ? `<img src="${product.image_url}" alt="${product.name}" class="product-image">` : ''}
-                    <div class="details">
-                        <h3>${product.name}</h3>
-                        <p>${product.description}</p>
-                        <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
-                        ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
-                        <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}" class="button">Alquilar</a>
-                        ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
-                    </div>
+    productsList.innerHTML = products.map(product => {
+        // Manejar photos como array (tomar la primera URL si existe)
+        const photoUrl = product.photos && product.photos.length > 0 ? product.photos[0] : '';
+        return `
+            <div class="product">
+                ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image">` : '<p>No image available</p>'}
+                <div class="details">
+                    <h3>${product.name}</h3>
+                    <p>${product.description}</p>
+                    <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
+                    ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
+                    <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}" class="button">Alquilar</a>
+                    ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
                 </div>
-            `).join('');
-        };
+            </div>
+        `;
+    }).join('');
+};
 
         if (productsList) {
             await loadProducts();
