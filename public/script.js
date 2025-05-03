@@ -468,7 +468,7 @@ if (window.location.pathname.includes('messages.html')) {
                 currency: 'COP',
                 amountInCents: parseInt(amount) * 100,
                 reference: 'TUALKI-' + Date.now(),
-                publicKey: 'pub_prod_OPJOToiCYujZj4NTZ2fvCOVSKo7XclCX',
+                publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
                 redirectUrl: 'https://tualki-web.vercel.app/index.html'
             });
             wompiCheckout.open(function (result) {
