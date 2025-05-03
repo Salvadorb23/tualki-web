@@ -99,6 +99,16 @@
 
                 console.log('Iniciando pago - Parámetros:', { amount, reference, currency, publicKey, redirectUrl });
 
+                // Inicializar el widget de Wompi
+                try {
+                    window.$wompi.initialize({ publicKey: publicKey });
+                    console.log('Widget de Wompi inicializado con éxito');
+                } catch (initError) {
+                    console.error('Error al inicializar el widget:', initError);
+                    alert('Error al inicializar el pago: ' + initError.message);
+                    return;
+                }
+
                 // Generar la firma
                 const amountInCents = parseInt(amount) * 100;
                 const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
