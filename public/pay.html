@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago - Tualki</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://checkout.wompi.co/widget.js" defer></script>
+    <script src="https://checkout.wompi.co/widget.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -55,7 +55,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Página cargada, intentando cargar el script de Wompi...');
+            console.log('Página cargada, configurando Wompi...');
 
             const urlParams = new URLSearchParams(window.location.search);
             const name = urlParams.get('name');
@@ -92,6 +92,14 @@
             productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
 
             payButton.addEventListener('click', async () => {
+                console.log('Botón de pagar clickeado');
+
+                if (!window.Wompi || !Wompi.Checkout) {
+                    console.error('Wompi no está definido');
+                    alert('Error: El sistema de pago no está disponible. Intenta de nuevo más tarde.');
+                    return;
+                }
+
                 const amount = displayPrice;
                 const reference = 'TUALKI-' + Date.now();
                 const currency = 'COP';
@@ -99,47 +107,8 @@
                 const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
                 const redirectUrl = 'https://tualki-web.vercel.app/index.html';
 
-                console.log('Iniciando pago - Parámetros:', { amount, reference, currency, publicKey, redirectUrl });
+                console.log('Parámetros de pago:', { amount, reference, currency, publicKey, redirectUrl });
 
-                // Verificar si el widget de Wompi está disponible
-                const checkWompi = () => {
-                    return new Promise((resolve) => {
-                        console.log('Verificando si window.$wompi está disponible...');
-                        const interval = setInterval(() => {
-                            if (window.$wompi && typeof window.$wompi.initialize === 'function') {
-                                console.log('window.$wompi encontrado!');
-                                clearInterval(interval);
-                                resolve(true);
-                            } else {
-                                console.log('window.$wompi no está disponible aún...');
-                            }
-                        }, 100);
-                        setTimeout(() => {
-                            clearInterval(interval);
-                            console.log('Tiempo de espera agotado: window.$wompi no se cargó');
-                            resolve(false);
-                        }, 10000); // 10 segundos de espera
-                    });
-                };
-
-                const wompiReady = await checkWompi();
-                if (!wompiReady) {
-                    console.error('El widget de Wompi no se cargó a tiempo');
-                    alert('Error: El sistema de pago no está disponible. Intenta de nuevo más tarde.');
-                    return;
-                }
-
-                // Inicializar el widget de Wompi
-                try {
-                    window.$wompi.initialize({ publicKey: publicKey });
-                    console.log('Widget de Wompi inicializado con éxito');
-                } catch (initError) {
-                    console.error('Error al inicializar el widget:', initError);
-                    alert('Error al inicializar el pago: ' + initError.message);
-                    return;
-                }
-
-                // Generar la firma
                 const amountInCents = parseInt(amount) * 100;
                 const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
                 const encoder = new TextEncoder();
@@ -149,8 +118,7 @@
                 const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
                 console.log('Firma generada:', signature);
 
-                // Configurar el widget de Wompi
-                const wompiCheckout = new WidgetCheckout({
+                const checkout = new Wompi.Checkout({
                     currency: currency,
                     amountInCents: amountInCents,
                     reference: reference,
@@ -161,21 +129,48 @@
                     }
                 });
 
-                console.log('Widget configurado, abriendo checkout...');
-                wompiCheckout.open((result) => {
-                    console.log('Resultado de Wompi completo:', result);
+                console.log('Checkout de Wompi configurado, abriendo...');
+                checkout.open(async (result) => {
+                    console.log('Resultado de Wompi:', result);
 
                     if (result && result.status === 'APPROVED') {
                         alert('¡Pago exitoso!');
                         console.log('Pago aprobado, guardando transacción...');
-                        // Aquí puedes agregar la lógica para guardar la transacción en Supabase
+
+                        const supabase = window.supabase.createClient(
+                            'https://vrvwmlromomnynckppqz.supabase.co',
+                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
+                        );
+
+                        const { data: session } = await supabase.auth.getSession();
+                        if (session.session) {
+                            const { error } = await supabase
+                                .from('transactions')
+                                .insert({
+                                    buyer_id: session.session.user.id,
+                                    product_id: productId,
+                                    amount: amount,
+                                    type: action,
+                                    status: 'completed',
+                                    reference: reference,
+                                    created_at: new Date().toISOString()
+                                });
+
+                            if (error) {
+                                console.error('Error al guardar la transacción:', error.message);
+                                alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
+                            } else {
+                                console.log('Transacción registrada con éxito');
+                                window.location.href = redirectUrl;
+                            }
+                        }
                     } else {
                         const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
                         console.error(errorMessage);
                         alert(errorMessage);
                     }
                 }, (error) => {
-                    console.error('Error en el widget de Wompi:', error);
+                    console.error('Error en el checkout:', error);
                     alert('Error al procesar el pago: ' + error.message);
                 });
             });
