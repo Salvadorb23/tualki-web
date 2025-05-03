@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago - Tualki</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://checkout.wompi.co/widget/v2/widget.js" defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,32 +57,12 @@
     </div>
 
     <script>
-        // Definir las claves directamente (usar variables de entorno sería ideal, pero requeriría backend)
+        // Claves de Wompi (deben estar en variables de entorno en producción)
         const publicKey = 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ';
         const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
 
-        // Función para esperar a que Wompi esté cargado
-        function waitForWompi() {
-            return new Promise((resolve, reject) => {
-                const maxAttempts = 20;
-                let attempts = 0;
-                const interval = setInterval(() => {
-                    if (window.WompiCheckout) {
-                        clearInterval(interval);
-                        console.log('WompiCheckout está disponible');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        clearInterval(interval);
-                        console.error('No se pudo cargar WompiCheckout después de', maxAttempts, 'intentos');
-                        reject(new Error('No se pudo cargar el script de Wompi'));
-                    }
-                    attempts++;
-                }, 500);
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('Página cargada, intentando cargar el script de Wompi...');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Página cargada, configurando pago...');
 
             const urlParams = new URLSearchParams(window.location.search);
             const name = urlParams.get('name');
@@ -118,88 +97,34 @@
             }
 
             productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+            payButton.disabled = false;
 
-            console.log('Claves usadas:', { publicKey, integrityKey });
+            payButton.addEventListener('click', () => {
+                console.log('Iniciando pago con enlace de Wompi...');
 
-            try {
-                // Esperar a que Wompi esté cargado
-                await waitForWompi();
-                console.log('Wompi cargado correctamente');
-                payButton.disabled = false;
-            } catch (error) {
-                console.error(error.message);
-                alert('Error: No se pudo cargar el sistema de pago. Intenta de nuevo más tarde. Contacta a soporte si persiste.');
-                return;
-            }
-
-            payButton.addEventListener('click', async () => {
-                console.log('Iniciando pago - Parámetros:', { displayPrice });
-
-                const amount = displayPrice;
+                const amountInCents = parseInt(displayPrice) * 100;
                 const reference = 'TUALKI-' + Date.now();
-                const currency = 'COP';
                 const redirectUrl = 'https://tualki-web.vercel.app/index.html';
+                const currency = 'COP';
 
-                console.log('Configurando Wompi con:', { amount, reference, currency, publicKey, redirectUrl });
-
-                const amountInCents = parseInt(amount) * 100;
+                // Generar la firma (signature) para el enlace de pago
                 const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
                 const encoder = new TextEncoder();
                 const data = encoder.encode(stringToSign);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                console.log('Firma generada:', signature);
+                crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    console.log('Firma generada:', signature);
 
-                const checkout = new WompiCheckout({
-                    currency: currency,
-                    amountInCents: amountInCents,
-                    reference: reference,
-                    publicKey: publicKey,
-                    redirectUrl: redirectUrl,
-                    signature: {
-                        integrity: signature
-                    }
-                });
+                    // Construir el enlace de pago de Wompi
+                    const paymentLink = `https://checkout.wompi.co/p/?public-key=${publicKey}&amount-in-cents=${amountInCents}&currency=${currency}&reference=${reference}&redirect-url=${encodeURIComponent(redirectUrl)}&signature=${signature}`;
+                    console.log('Enlace de pago generado:', paymentLink);
 
-                console.log('Abriendo checkout de Wompi...');
-                checkout.open(async (result) => {
-                    console.log('Resultado de Wompi:', result);
-
-                    if (result.status === 'APPROVED') {
-                        alert('¡Pago exitoso!');
-                        console.log('Pago aprobado, guardando transacción...');
-
-                        const supabase = window.supabase.createClient(
-                            'https://vrvwmlromomnynckppqz.supabase.co',
-                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
-                        );
-
-                        const { data: session } = await supabase.auth.getSession();
-                        if (session.session) {
-                            const { error } = await supabase.from('transactions').insert({
-                                buyer_id: session.session.user.id,
-                                product_id: productId,
-                                amount: amount,
-                                type: action,
-                                status: 'completed',
-                                reference: reference,
-                                created_at: new Date().toISOString()
-                            });
-
-                            if (error) {
-                                console.error('Error al guardar la transacción:', error.message);
-                                alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
-                            } else {
-                                console.log('Transacción registrada con éxito');
-                                window.location.href = redirectUrl;
-                            }
-                        }
-                    } else {
-                        const errorMessage = result.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
-                        console.error(errorMessage);
-                        alert(errorMessage);
-                    }
+                    // Redirigir al usuario al enlace de pago
+                    window.location.href = paymentLink;
+                }).catch(error => {
+                    console.error('Error al generar la firma:', error);
+                    alert('Error al iniciar el pago. Intenta de nuevo.');
                 });
             });
         });
