@@ -102,10 +102,13 @@
             payButton.addEventListener('click', () => {
                 console.log('Iniciando pago con enlace de Wompi...');
 
-                const amountInCents = parseInt(displayPrice) * 100;
+                const amount = parseFloat(displayPrice);
+                const amountInCents = Math.floor(amount * 100); // Asegurarse de que sea un número entero
                 const reference = 'TUALKI-' + Date.now();
                 const redirectUrl = 'https://tualki-web.vercel.app/index.html';
                 const currency = 'COP';
+
+                console.log('Valores para el enlace de pago:', { amount, amountInCents, reference, currency, redirectUrl });
 
                 // Generar la firma (signature) para el enlace de pago
                 const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
@@ -116,8 +119,8 @@
                     const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
                     console.log('Firma generada:', signature);
 
-                    // Construir el enlace de pago de Wompi con signature:integrity
-                    const paymentLink = `https://checkout.wompi.co/p/?public-key=${publicKey}&amount-in-cents=${amountInCents}¤cy=${currency}&reference=${reference}&redirect-url=${encodeURIComponent(redirectUrl)}&signature:integrity=${signature}`;
+                    // Construir el enlace de pago de Wompi con parámetros correctamente codificados
+                    const paymentLink = `https://checkout.wompi.co/p/?public-key=${encodeURIComponent(publicKey)}&amount-in-cents=${amountInCents}&currency=${encodeURIComponent(currency)}&reference=${encodeURIComponent(reference)}&redirect-url=${encodeURIComponent(redirectUrl)}&signature:integrity=${encodeURIComponent(signature)}`;
                     console.log('Enlace de pago generado:', paymentLink);
 
                     // Redirigir al usuario al enlace de pago
