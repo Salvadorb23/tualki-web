@@ -493,12 +493,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             wompiCheckout.open(async function (result) {
-                console.log('Resultado de Wompi:', result); // Log para depuración
+                console.log('Resultado de Wompi completo:', result); // Log detallado del resultado
 
                 if (result && result.status === 'APPROVED') {
                     alert('¡Pago exitoso!');
+                    console.log('Pago aprobado, guardando transacción...');
 
-                    // Guardar la transacción en la tabla 'transactions'
                     const { data: session } = await supabase.auth.getSession();
                     if (session.session) {
                         const { error } = await supabase
@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 buyer_id: session.session.user.id,
                                 product_id: productId,
                                 amount: amount,
-                                type: action, // 'rent' o 'buy'
+                                type: action,
                                 status: 'completed',
                                 reference: reference,
                                 created_at: new Date().toISOString()
@@ -515,11 +515,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         if (error) {
                             console.error('Error al guardar la transacción:', error.message);
-                            alert('Error al registrar la transacción: ' + error.message);
+                            alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
+                        } else {
+                            console.log('Transacción registrada con éxito');
+                            window.location.href = 'https://tualki-web.vercel.app/index.html'; // Redirección manual después de guardar
                         }
                     }
                 } else {
-                    alert('Error en el pago: ' + (result?.status || 'Desconocido'));
+                    const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
+                    console.error(errorMessage);
+                    alert(errorMessage);
                 }
             });
         });
