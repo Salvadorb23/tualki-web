@@ -1,1 +1,37 @@
-
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tualki - Mensajes</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="header">
+        <h1>Tualki</h1>
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="publish.html">Publicar un producto</a>
+            <a href="messages.html">Mensajes</a>
+            <a href="deliveries.html">Entregas</a>
+        </div>
+        <div class="auth-links">
+            <a href="#" id="logout">Cerrar Sesión</a>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Mis Mensajes</h1>
+        <p>Revisa tus conversaciones aquí.</p>
+        <div id="messages-list" class="messages-grid"></div>
+        <form id="send-message-form" class="auth-form">
+            <label for="receiver-email">Correo del destinatario</label>
+            <input type="email" id="receiver-email" required placeholder="Ingresa el correo del destinatario">
+            <label for="message-content">Mensaje</label>
+            <textarea id="message-content" required placeholder="Escribe tu mensaje"></textarea>
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+</body>
+</html>
