@@ -42,6 +42,10 @@
         button:hover {
             background-color: #0056b3;
         }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -50,11 +54,29 @@
         <p><strong>Producto:</strong> <span id="product-name"></span></p>
         <p><span id="product-description"></span></p>
         <p><strong>Precio:</strong> <span id="product-price"></span></p>
-        <button id="pay-button">Pagar</button>
+        <button id="pay-button" disabled>Pagar</button>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Función para esperar a que Wompi esté cargado
+        function waitForWompi() {
+            return new Promise((resolve, reject) => {
+                const maxAttempts = 20;
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    if (window.WompiCheckout) {
+                        clearInterval(interval);
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(interval);
+                        reject(new Error('No se pudo cargar el script de Wompi'));
+                    }
+                    attempts++;
+                }, 500);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('Página cargada, intentando cargar el script de Wompi...');
 
             const urlParams = new URLSearchParams(window.location.search);
@@ -91,15 +113,19 @@
 
             productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
 
+            try {
+                // Esperar a que Wompi esté cargado
+                await waitForWompi();
+                console.log('Wompi cargado correctamente');
+                payButton.disabled = false;
+            } catch (error) {
+                console.error(error.message);
+                alert('Error: No se pudo cargar el sistema de pago. Intenta de nuevo más tarde.');
+                return;
+            }
+
             payButton.addEventListener('click', async () => {
                 console.log('Iniciando pago - Parámetros:', { displayPrice });
-
-                // Verificar si Wompi está disponible
-                if (!window.Wompi) {
-                    console.error('Wompi no está definido');
-                    alert('Error: El sistema de pago no está disponible. Intenta de nuevo más tarde.');
-                    return;
-                }
 
                 const amount = displayPrice;
                 const reference = 'TUALKI-' + Date.now();
@@ -119,11 +145,11 @@
                 const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
                 console.log('Firma generada:', signature);
 
-                window.Wompi.setPublicKey(publicKey);
-                const checkout = window.Wompi.checkout({
+                const checkout = new WompiCheckout({
                     currency: currency,
                     amountInCents: amountInCents,
                     reference: reference,
+                    publicKey: publicKey,
                     redirectUrl: redirectUrl,
                     signature: {
                         integrity: signature
@@ -131,10 +157,10 @@
                 });
 
                 console.log('Abriendo checkout de Wompi...');
-                checkout.open(function(result) {
+                checkout.open(async (result) => {
                     console.log('Resultado de Wompi:', result);
 
-                    if (result && result.status === 'APPROVED') {
+                    if (result.status === 'APPROVED') {
                         alert('¡Pago exitoso!');
                         console.log('Pago aprobado, guardando transacción...');
 
@@ -143,35 +169,31 @@
                             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
                         );
 
-                        supabase.auth.getSession().then(({ data: session }) => {
-                            if (session.session) {
-                                supabase.from('transactions').insert({
-                                    buyer_id: session.session.user.id,
-                                    product_id: productId,
-                                    amount: amount,
-                                    type: action,
-                                    status: 'completed',
-                                    reference: reference,
-                                    created_at: new Date().toISOString()
-                                }).then(({ error }) => {
-                                    if (error) {
-                                        console.error('Error al guardar la transacción:', error.message);
-                                        alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
-                                    } else {
-                                        console.log('Transacción registrada con éxito');
-                                        window.location.href = redirectUrl;
-                                    }
-                                });
+                        const { data: session } = await supabase.auth.getSession();
+                        if (session.session) {
+                            const { error } = await supabase.from('transactions').insert({
+                                buyer_id: session.session.user.id,
+                                product_id: productId,
+                                amount: amount,
+                                type: action,
+                                status: 'completed',
+                                reference: reference,
+                                created_at: new Date().toISOString()
+                            });
+
+                            if (error) {
+                                console.error('Error al guardar la transacción:', error.message);
+                                alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
+                            } else {
+                                console.log('Transacción registrada con éxito');
+                                window.location.href = redirectUrl;
                             }
-                        });
+                        }
                     } else {
-                        const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
+                        const errorMessage = result.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
                         console.error(errorMessage);
                         alert(errorMessage);
                     }
-                }, function(error) {
-                    console.error('Error en el checkout:', error);
-                    alert('Error al procesar el pago: ' + error.message);
                 });
             });
         });
