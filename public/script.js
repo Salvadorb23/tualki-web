@@ -428,56 +428,76 @@ if (window.location.pathname.includes('messages.html')) {
         }
     }
 
-    // Código para la página de pago (pay.html)
-    if (window.location.pathname.includes('pay.html')) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const name = urlParams.get('name');
-        const description = urlParams.get('description');
-        const pricePerDay = parseFloat(urlParams.get('price_per_day'));
-        const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
-        const action = urlParams.get('action');
+   // Código para la página de pago (pay.html)
+if (window.location.pathname.includes('pay.html')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name');
+    const description = urlParams.get('description');
+    const pricePerDay = parseFloat(urlParams.get('price_per_day'));
+    const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
+    const action = urlParams.get('action');
 
-        const actionTitle = document.getElementById('action-title');
-        const productName = document.getElementById('product-name');
-        const productDescription = document.getElementById('product-description');
-        const productPrice = document.getElementById('product-price');
+    const actionTitle = document.getElementById('action-title');
+    const productName = document.getElementById('product-name');
+    const productDescription = document.getElementById('product-description');
+    const productPrice = document.getElementById('product-price');
 
-        productName.textContent = name || 'Producto desconocido';
-        productDescription.textContent = description || 'Sin descripción';
+    productName.textContent = name || 'Producto desconocido';
+    productDescription.textContent = description || 'Sin descripción';
 
-        let displayPrice;
-        if (action === 'rent') {
-            actionTitle.textContent = 'Alquilar Producto';
-            displayPrice = pricePerDay;
-        } else if (action === 'buy') {
-            actionTitle.textContent = 'Comprar Producto';
-            displayPrice = salePrice;
-        } else {
-            actionTitle.textContent = 'Error';
-            displayPrice = 0;
-            productPrice.textContent = 'Precio no disponible';
-            return;
-        }
-
-        productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
-
-        const payButton = document.getElementById('pay-button');
-        payButton.addEventListener('click', () => {
-            const amount = displayPrice;
-            const wompiCheckout = new WidgetCheckout({
-                currency: 'COP',
-                amountInCents: parseInt(amount) * 100,
-                reference: 'TUALKI-' + Date.now(),
-                publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
-                redirectUrl: 'https://tualki-web.vercel.app/index.html'
-            });
-            wompiCheckout.open(function (result) {
-                if (result.status === 'APPROVED') {
-                    alert('¡Pago exitoso!');
-                } else {
-                    alert('Error en el pago: ' + result.status);
-                }
-            });
-        });
+    let displayPrice;
+    if (action === 'rent') {
+        actionTitle.textContent = 'Alquilar Producto';
+        displayPrice = pricePerDay;
+    } else if (action === 'buy') {
+        actionTitle.textContent = 'Comprar Producto';
+        displayPrice = salePrice;
+    } else {
+        actionTitle.textContent = 'Error';
+        displayPrice = 0;
+        productPrice.textContent = 'Precio no disponible';
+        return;
     }
-});
+
+    productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+
+    const payButton = document.getElementById('pay-button');
+    payButton.addEventListener('click', async () => {
+        const amount = displayPrice;
+        const reference = 'TUALKI-' + Date.now();
+        const currency = 'COP';
+
+        // Clave de integridad (obtén esta clave desde el panel de Wompi)
+        const integrityKey = 'TU_CLAVE_DE_INTEGRIDAD_DE_PRUEBAS'; // Reemplaza con tu clave de integridad de pruebas
+
+        // Concatenar los valores para la firma (reference + amountInCents + currency + integrityKey)
+        const amountInCents = parseInt(amount) * 100;
+        const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
+
+        // Generar la firma usando SHA-256
+        const encoder = new TextEncoder();
+        const data = encoder.encode(stringToSign);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        const wompiCheckout = new WidgetCheckout({
+            currency: 'COP',
+            amountInCents: amountInCents,
+            reference: reference,
+            publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ', // Reemplaza con tu clave pública de pruebas
+            redirectUrl: 'https://tualki-web.vercel.app/index.html',
+            signature: {
+                integrity: signature
+            }
+        });
+
+        wompiCheckout.open(function (result) {
+            if (result.status === 'APPROVED') {
+                alert('¡Pago exitoso!');
+            } else {
+                alert('Error en el pago: ' + result.status);
+            }
+        });
+    });
+}
