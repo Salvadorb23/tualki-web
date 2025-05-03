@@ -215,98 +215,105 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Código para la página de mensajes (messages.html)
-    if (window.location.pathname.includes('messages.html')) {
-        const messagesList = document.getElementById('messages-list');
-        const sendMessageForm = document.getElementById('send-message-form');
+if (window.location.pathname.includes('messages.html')) {
+    const messagesList = document.getElementById('messages-list');
+    const sendMessageForm = document.getElementById('send-message-form');
 
-        const loadMessages = async () => {
+    const loadMessages = async () => {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) {
+            alert('Por favor, inicia sesión para ver tus mensajes.');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`sender_id.eq.${session.session.user.id},receiver_id.eq.${session.session.user.id}`);
+
+        if (error) {
+            console.error('Error al cargar mensajes:', error.message);
+            messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
+            return;
+        }
+
+        if (data.length === 0) {
+            messagesList.innerHTML = '<p>No hay mensajes disponibles.</p>';
+            return;
+        }
+
+        messagesList.innerHTML = data.map(message => `
+            <div class="message">
+                <p><strong>De:</strong> ${message.sender_id}</p>
+                <p><strong>Para:</strong> ${message.receiver_id}</p>
+                <p>${message.content}</p>
+                <p><small>Enviado: ${new Date(message.created_at).toLocaleString()}</small></p>
+            </div>
+        `).join('');
+    };
+
+    if (messagesList) {
+        await loadMessages();
+        // Suscribirse a cambios en tiempo real (Realtime)
+        supabase
+            .channel('messages')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${session.session.user.id}` }, (payload) => {
+                console.log('Nuevo mensaje recibido:', payload);
+                loadMessages();
+            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `sender_id=eq.${session.session.user.id}` }, (payload) => {
+                console.log('Nuevo mensaje enviado:', payload);
+                loadMessages();
+            })
+            .subscribe();
+    }
+
+    if (sendMessageForm) {
+        sendMessageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             const { data: session } = await supabase.auth.getSession();
             if (!session.session) {
-                alert('Por favor, inicia sesión para ver tus mensajes.');
+                alert('Por favor, inicia sesión para enviar un mensaje.');
                 window.location.href = 'login.html';
                 return;
             }
 
-            const { data, error } = await supabase
+            const receiverEmail = document.getElementById('receiver-email').value;
+            const content = document.getElementById('message-content').value;
+
+            const { data: receiver, error: receiverError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('email', receiverEmail)
+                .single();
+
+            if (receiverError || !receiver) {
+                console.error('Error al buscar el destinatario:', receiverError?.message);
+                alert('El correo del destinatario no existe.');
+                return;
+            }
+
+            const { error } = await supabase
                 .from('messages')
-                .select('*')
-                .eq('receiver_id', session.session.user.id)
-                .or('sender_id.eq.' + session.session.user.id);
+                .insert({
+                    sender_id: session.session.user.id,
+                    receiver_id: receiver.id,
+                    content
+                });
 
             if (error) {
-                console.error('Error al cargar mensajes:', error.message);
-                messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
+                console.error('Error al enviar mensaje:', error.message);
+                alert('Error al enviar mensaje: ' + error.message);
                 return;
             }
 
-            if (data.length === 0) {
-                messagesList.innerHTML = '<p>No hay mensajes disponibles.</p>';
-                return;
-            }
-
-            messagesList.innerHTML = data.map(message => `
-                <div class="message">
-                    <p><strong>De:</strong> ${message.sender_id}</p>
-                    <p><strong>Para:</strong> ${message.receiver_id}</p>
-                    <p>${message.content}</p>
-                    <p><small>Enviado: ${new Date(message.created_at).toLocaleString()}</small></p>
-                </div>
-            `).join('');
-        };
-
-        if (messagesList) {
+            alert('Mensaje enviado con éxito!');
+            sendMessageForm.reset();
             await loadMessages();
-            // Suscribirse a cambios en tiempo real (Realtime)
-            supabase
-                .channel('messages')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, loadMessages)
-                .subscribe();
-        }
-
-        if (sendMessageForm) {
-            sendMessageForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const { data: session } = await supabase.auth.getSession();
-                if (!session.session) {
-                    alert('Por favor, inicia sesión para enviar un mensaje.');
-                    window.location.href = 'login.html';
-                    return;
-                }
-
-                const receiverEmail = document.getElementById('receiver-email').value;
-                const content = document.getElementById('message-content').value;
-
-                const { data: receiver } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('email', receiverEmail)
-                    .single();
-
-                if (!receiver) {
-                    alert('El correo del destinatario no existe.');
-                    return;
-                }
-
-                const { error } = await supabase
-                    .from('messages')
-                    .insert({
-                        sender_id: session.session.user.id,
-                        receiver_id: receiver.id,
-                        content
-                    });
-
-                if (error) {
-                    console.error('Error al enviar mensaje:', error.message);
-                    alert('Error al enviar mensaje: ' + error.message);
-                    return;
-                }
-
-                alert('Mensaje enviado con éxito!');
-                sendMessageForm.reset();
-                await loadMessages();
-            });
-        }
+        });
     }
+}
 
     // Código para la página de alquiler (rent.html)
     if (window.location.pathname.includes('rent.html')) {
