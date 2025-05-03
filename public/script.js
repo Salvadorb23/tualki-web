@@ -23,6 +23,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             await supabase.auth.signOut();
             window.location.href = 'login.html';
         });
+    } else {
+        authLinks.innerHTML = `
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="signup.html">Registrarse</a>
+        `;
     }
 
     // Redirigir si el usuario ya está autenticado en login.html o signup.html
@@ -205,6 +210,100 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Producto publicado con éxito:', data);
                 alert('Producto publicado con éxito');
                 window.location.href = 'index.html';
+            });
+        }
+    }
+
+    // Código para la página de mensajes (messages.html)
+    if (window.location.pathname.includes('messages.html')) {
+        const messagesList = document.getElementById('messages-list');
+        const sendMessageForm = document.getElementById('send-message-form');
+
+        const loadMessages = async () => {
+            const { data: session } = await supabase.auth.getSession();
+            if (!session.session) {
+                alert('Por favor, inicia sesión para ver tus mensajes.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('receiver_id', session.session.user.id)
+                .or('sender_id.eq.' + session.session.user.id);
+
+            if (error) {
+                console.error('Error al cargar mensajes:', error.message);
+                messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
+                return;
+            }
+
+            if (data.length === 0) {
+                messagesList.innerHTML = '<p>No hay mensajes disponibles.</p>';
+                return;
+            }
+
+            messagesList.innerHTML = data.map(message => `
+                <div class="message">
+                    <p><strong>De:</strong> ${message.sender_id}</p>
+                    <p><strong>Para:</strong> ${message.receiver_id}</p>
+                    <p>${message.content}</p>
+                    <p><small>Enviado: ${new Date(message.created_at).toLocaleString()}</small></p>
+                </div>
+            `).join('');
+        };
+
+        if (messagesList) {
+            await loadMessages();
+            // Suscribirse a cambios en tiempo real (Realtime)
+            supabase
+                .channel('messages')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, loadMessages)
+                .subscribe();
+        }
+
+        if (sendMessageForm) {
+            sendMessageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const { data: session } = await supabase.auth.getSession();
+                if (!session.session) {
+                    alert('Por favor, inicia sesión para enviar un mensaje.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const receiverEmail = document.getElementById('receiver-email').value;
+                const content = document.getElementById('message-content').value;
+
+                const { data: receiver } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', receiverEmail)
+                    .single();
+
+                if (!receiver) {
+                    alert('El correo del destinatario no existe.');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('messages')
+                    .insert({
+                        sender_id: session.session.user.id,
+                        receiver_id: receiver.id,
+                        content
+                    });
+
+                if (error) {
+                    console.error('Error al enviar mensaje:', error.message);
+                    alert('Error al enviar mensaje: ' + error.message);
+                    return;
+                }
+
+                alert('Mensaje enviado con éxito!');
+                sendMessageForm.reset();
+                await loadMessages();
             });
         }
     }
