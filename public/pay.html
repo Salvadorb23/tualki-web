@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago - Tualki</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://checkout.wompi.co/widget.js"></script>
+    <script src="https://checkout.wompi.co/widget.js" defer></script> <!-- Añadido 'defer' -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -98,6 +98,29 @@
                 const redirectUrl = 'https://tualki-web.vercel.app/index.html';
 
                 console.log('Iniciando pago - Parámetros:', { amount, reference, currency, publicKey, redirectUrl });
+
+                // Verificar si el widget de Wompi está disponible
+                const checkWompi = () => {
+                    return new Promise((resolve) => {
+                        const interval = setInterval(() => {
+                            if (window.$wompi && typeof window.$wompi.initialize === 'function') {
+                                clearInterval(interval);
+                                resolve();
+                            }
+                        }, 100); // Verifica cada 100ms
+                        setTimeout(() => {
+                            clearInterval(interval);
+                            resolve(false); // Timeout después de 5 segundos
+                        }, 5000);
+                    });
+                };
+
+                const wompiReady = await checkWompi();
+                if (!wompiReady) {
+                    console.error('El widget de Wompi no se cargó a tiempo');
+                    alert('Error: El sistema de pago no está disponible. Intenta de nuevo más tarde.');
+                    return;
+                }
 
                 // Inicializar el widget de Wompi
                 try {
