@@ -6,7 +6,6 @@
     <title>Tualki</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://checkout.wompi.co/widget.js"></script>
-    <script src="script.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -172,9 +171,10 @@
             border-radius: 15px;
             border: 1px solid #ccc;
             transition: all 0.3s;
+            cursor: pointer;
         }
 
-        .categories-bar a:hover {
+        .categories-bar a:hover, .categories-bar a.active {
             background-color: #007bff;
             color: white;
             border-color: #0056b3;
@@ -186,7 +186,7 @@
             text-align: center;
             padding: 10px;
             font-size: 14px;
-            height: 50px; /* Espacio reservado para anuncios */
+            height: 50px;
         }
 
         .container {
@@ -233,17 +233,12 @@
             justify-content: center;
         }
 
-        .filters button {
-            background-color: #f0f0f0;
+        .filters input {
+            padding: 5px;
             border: 1px solid #ccc;
-            padding: 5px 10px;
             border-radius: 15px;
-            cursor: pointer;
             font-size: 14px;
-        }
-
-        .filters button:hover {
-            background-color: #e0e0e0;
+            min-width: 150px;
         }
 
         #products-list {
@@ -257,12 +252,27 @@
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            position: relative;
         }
 
         .product-image {
             width: 100%;
             height: 200px;
             object-fit: cover;
+        }
+
+        .favorite-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .favorite-button.favorited {
+            color: red;
         }
 
         .details {
@@ -311,7 +321,6 @@
             background-color: #5a6268;
         }
 
-        /* Modal Personalizada */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -360,7 +369,6 @@
             background-color: #0056b3;
         }
 
-        /* Responsividad */
         @media (max-width: 768px) {
             header {
                 flex-wrap: wrap;
@@ -391,7 +399,7 @@
                 align-items: center;
             }
 
-            .search-filter input {
+            .search-filter input, .filters input {
                 width: 100%;
             }
         }
@@ -431,21 +439,17 @@
     </header>
 
     <div class="categories-bar">
-        <a href="#">Categorías</a>
-        <a href="#">Favoritos</a>
-        <a href="#">Agregados recientes</a>
-        <a href="#">Electrónica</a>
-        <a href="#">Eventos</a>
-        <a href="#">Hogar</a>
-        <a href="#">Ver más</a>
+        <a href="#" data-filter="all" class="active">Categorías</a>
+        <a href="#" data-filter="favorites">Favoritos</a>
+        <a href="#" data-filter="recent">Agregados recientes</a>
+        <a href="#" data-filter="Electrónica">Electrónica</a>
+        <a href="#" data-filter="Eventos">Eventos</a>
+        <a href="#" data-filter="Hogar">Hogar</a>
+        <a href="#" data-filter="more">Ver más</a>
     </div>
 
-    
-
     <div class="ad-bar">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9146059688937409"
-     crossorigin="anonymous"></script>
-
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9146059688937409" crossorigin="anonymous"></script>
     </div>
 
     <div class="container">
@@ -457,17 +461,13 @@
         </div>
 
         <div class="filters">
-            <button>Filtrar</button>
-            <button>Precio Máx</button>
-            <button>Min</button>
-            <button>Estado 10/10</button>
-            <button>Ubicación</button>
+            <input type="number" id="max-price" placeholder="Precio máximo (COP)">
+            <input type="text" id="location-filter" placeholder="Ubicación">
         </div>
 
         <div id="products-list"></div>
     </div>
 
-    <!-- Modal para Alertas Personalizadas -->
     <div class="modal-overlay" id="custom-alert">
         <div class="modal-content">
             <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//Logo%20tualki%20para%20web.png" alt="Tualki Logo">
@@ -477,7 +477,6 @@
     </div>
 
     <script>
-        // Función para mostrar alertas personalizadas
         function showCustomAlert(message) {
             const modal = document.getElementById('custom-alert');
             const messageElement = document.getElementById('custom-alert-message');
@@ -485,37 +484,102 @@
             modal.style.display = 'flex';
         }
 
-        // Función para cerrar la modal
         function closeCustomAlert() {
             const modal = document.getElementById('custom-alert');
             modal.style.display = 'none';
         }
 
-        // Reemplazar alert nativo por el personalizado
         window.alert = showCustomAlert;
 
-        // Mostrar nombre de usuario dinámicamente y cargar productos
         document.addEventListener('DOMContentLoaded', async () => {
-            const usernameElement = document.getElementById('username');
             const supabase = window.supabase.createClient(
                 'https://vrvwmlromomnynckppqz.supabase.co',
                 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
             );
+
+            const usernameElement = document.getElementById('username');
             const { data: session } = await supabase.auth.getSession();
             if (session.session) {
                 usernameElement.textContent = session.session.user.email.split('@')[0];
+            } else {
+                window.location.href = 'login.html';
             }
 
-            // Cargar productos
             const productsList = document.getElementById('products-list');
             const searchBar = document.getElementById('search-bar');
+            const maxPriceInput = document.getElementById('max-price');
+            const locationInput = document.getElementById('location-filter');
+            const categoryLinks = document.querySelectorAll('.categories-bar a');
+
+            let currentFilter = 'all';
+            let userFavorites = new Set();
+
+            const loadFavorites = async () => {
+                const { data: favorites, error } = await supabase
+                    .from('favorites')
+                    .select('product_id')
+                    .eq('user_id', session.session.user.id);
+                if (error) {
+                    console.error('Error al cargar favoritos:', error.message);
+                    return;
+                }
+                userFavorites = new Set(favorites.map(fav => fav.product_id));
+            };
+
+            const toggleFavorite = async (productId, button) => {
+                const isFavorited = userFavorites.has(productId);
+                if (isFavorited) {
+                    const { error } = await supabase
+                        .from('favorites')
+                        .delete()
+                        .eq('user_id', session.session.user.id)
+                        .eq('product_id', productId);
+                    if (error) {
+                        console.error('Error al quitar favorito:', error.message);
+                        showCustomAlert('Error al quitar el favorito.');
+                        return;
+                    }
+                    userFavorites.delete(productId);
+                    button.classList.remove('favorited');
+                } else {
+                    const { error } = await supabase
+                        .from('favorites')
+                        .insert({ user_id: session.session.user.id, product_id: productId });
+                    if (error) {
+                        console.error('Error al añadir favorito:', error.message);
+                        showCustomAlert('Error al añadir el favorito.');
+                        return;
+                    }
+                    userFavorites.add(productId);
+                    button.classList.add('favorited');
+                }
+                if (currentFilter === 'favorites') {
+                    loadProducts();
+                }
+            };
 
             const loadProducts = async () => {
                 let query = supabase.from('products').select('*');
 
                 const searchTerm = searchBar.value.toLowerCase();
+                const maxPrice = maxPriceInput.value ? parseFloat(maxPriceInput.value) : null;
+                const location = locationInput.value.toLowerCase();
+
                 if (searchTerm) {
                     query = query.ilike('name', `%${searchTerm}%`);
+                }
+                if (maxPrice) {
+                    query = query.lte('price_per_day', maxPrice);
+                }
+                if (location) {
+                    query = query.ilike('location', `%${location}%`);
+                }
+                if (currentFilter === 'favorites') {
+                    query = query.in('id', Array.from(userFavorites));
+                } else if (currentFilter === 'recent') {
+                    query = query.order('created_at', { ascending: false });
+                } else if (currentFilter !== 'all' && currentFilter !== 'more') {
+                    query = query.eq('category', currentFilter);
                 }
 
                 const { data: products, error } = await query;
@@ -532,16 +596,20 @@
 
                 productsList.innerHTML = products.map(product => {
                     const photoUrl = product.photos && product.photos.length > 0 ? product.photos[0] : null;
+                    const isFavorited = userFavorites.has(product.id);
                     return `
                         <div class="product">
-                            ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image">` : '<p>No image available</p>'}
+                            <button class="favorite-button ${isFavorited ? 'favorited' : ''}" data-product-id="${product.id}" onclick="toggleFavorite(${product.id}, this)">♥</button>
+                            ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image">` : '<p>Sin imagen</p>'}
                             <div class="details">
                                 <h3>${product.name}</h3>
                                 <p>${product.description}</p>
-                                <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
-                                ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
-                                <a href="rent.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}&seller_id=${product.user_id}" class="button">Alquilar</a>
-                                ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
+                                <p class="rental-price">Precio por día: $${product.price_per_day.toLocaleString('es-CO')} COP</p>
+                                ${product.sale_price ? `<p class="sale-price">Precio de venta: $${product.sale_price.toLocaleString('es-CO')} COP</p>` : ''}
+                                <p>Ubicación: ${product.location || 'No especificada'}</p>
+                                <p>Categoría: ${product.category || 'Sin categoría'}</p>
+                                <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}&seller_id=${product.user_id}" class="button">Alquilar</a>
+                                ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}&seller_id=${product.user_id}" class="secondary-button">Comprar</a>` : ''}
                             </div>
                         </div>
                     `;
@@ -549,11 +617,23 @@
             };
 
             if (productsList) {
+                await loadFavorites();
                 loadProducts();
                 searchBar.addEventListener('input', loadProducts);
+                maxPriceInput.addEventListener('input', loadProducts);
+                locationInput.addEventListener('input', loadProducts);
+
+                categoryLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        categoryLinks.forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                        currentFilter = link.getAttribute('data-filter');
+                        loadProducts();
+                    });
+                });
             }
 
-            // Controlar dropdown del perfil
             const profileDropdown = document.getElementById('profile-dropdown');
             let isDropdownOpen = false;
 
@@ -582,13 +662,11 @@
                 }, 200);
             });
 
-            // Cerrar sesión
             document.getElementById('logout').addEventListener('click', async () => {
                 await supabase.auth.signOut();
                 window.location.href = 'login.html';
             });
 
-            // Controlar dropdown de país
             const countryDropdown = document.getElementById('country-dropdown');
             document.getElementById('country-flag').addEventListener('click', () => {
                 countryDropdown.style.display = countryDropdown.style.display === 'block' ? 'none' : 'block';
@@ -600,14 +678,12 @@
                 }
             });
 
-            // Seleccionar país
             countryDropdown.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const countryCode = link.getAttribute('data-country');
                     document.getElementById('country-flag').src = link.querySelector('img').src;
                     countryDropdown.style.display = 'none';
-                    // Aquí puedes agregar lógica para guardar la selección del país
                 });
             });
         });
