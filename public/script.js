@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicializar Supabase
     const supabase = window.supabase.createClient(
         'https://vrvwmlromomnynckppqz.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
     );
 
     // Actualizar enlaces de autenticación según el estado del usuario
@@ -72,10 +72,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             productsList.innerHTML = products.map(product => {
-                const photoUrl = product.photos && product.photos.length > 0 ? product.photos[0] : 'https://via.placeholder.com/150'; // URL de respaldo
+                const photoUrl = product.photos && product.photos.length > 0 ? product.photos[0] : null;
                 return `
                     <div class="product">
-                        ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/150'; this.onerror=null;">` : '<p>No image available</p>'}
+                        ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image">` : '<p>No image available</p>'}
                         <div class="details">
                             <h3>${product.name}</h3>
                             <p>${product.description}</p>
