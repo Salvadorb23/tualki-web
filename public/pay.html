@@ -3,30 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tualki - Pagar</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <title>Pago - Tualki</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://checkout.wompi.co/widget.js"></script>
-    <script src="script.js" defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #ff6200;
+            margin-bottom: 20px;
+        }
+        p {
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Tualki</h1>
-        <div class="nav-links">
-            <a href="index.html">Inicio</a>
-            <a href="publish.html">Publicar un producto</a>
-        </div>
-        <div class="auth-links">
-            <a href="login.html">Iniciar Sesión</a>
-            <a href="signup.html">Registrarse</a>
-        </div>
-    </div>
     <div class="container">
-        <h1 id="action-title"></h1>
-        <p>Producto: <span id="product-name"></span></p>
-        <p>Descripción: <span id="product-description"></span></p>
-        <p>Precio: <span id="product-price"></span></p>
-        <button id="pay-button" class="button">Pagar con Wompi</button>
+        <h2 id="action-title"></h2>
+        <p><strong>Producto:</strong> <span id="product-name"></span></p>
+        <p><span id="product-description"></span></p>
+        <p><strong>Precio:</strong> <span id="product-price"></span></p>
+        <button id="pay-button">Pagar</button>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const name = urlParams.get('name');
+            const description = urlParams.get('description');
+            const pricePerDay = parseFloat(urlParams.get('price_per_day'));
+            const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
+            const action = urlParams.get('action');
+            const productId = urlParams.get('product_id');
+
+            const actionTitle = document.getElementById('action-title');
+            const productName = document.getElementById('product-name');
+            const productDescription = document.getElementById('product-description');
+            const productPrice = document.getElementById('product-price');
+            const payButton = document.getElementById('pay-button');
+
+            productName.textContent = name || 'Producto desconocido';
+            productDescription.textContent = description || 'Sin descripción';
+
+            let displayPrice;
+            if (action === 'rent') {
+                actionTitle.textContent = 'Alquilar Producto';
+                displayPrice = pricePerDay;
+            } else if (action === 'buy') {
+                actionTitle.textContent = 'Comprar Producto';
+                displayPrice = salePrice;
+            } else {
+                actionTitle.textContent = 'Error';
+                displayPrice = 0;
+                productPrice.textContent = 'Precio no disponible';
+                console.error('Acción no válida:', action);
+                return;
+            }
+
+            productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+
+            payButton.addEventListener('click', async () => {
+                const amount = displayPrice;
+                const reference = 'TUALKI-' + Date.now();
+                const currency = 'COP';
+                const publicKey = 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ';
+                const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
+                const redirectUrl = 'https://tualki-web.vercel.app/index.html';
+
+                console.log('Iniciando pago - Parámetros:', { amount, reference, currency, publicKey, redirectUrl });
+
+                // Generar la firma
+                const amountInCents = parseInt(amount) * 100;
+                const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(stringToSign);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                console.log('Firma generada:', signature);
+
+                // Configurar el widget de Wompi
+                const wompiCheckout = new WidgetCheckout({
+                    currency: currency,
+                    amountInCents: amountInCents,
+                    reference: reference,
+                    publicKey: publicKey,
+                    redirectUrl: redirectUrl,
+                    signature: {
+                        integrity: signature
+                    }
+                });
+
+                console.log('Widget configurado, abriendo checkout...');
+                wompiCheckout.open((result) => {
+                    console.log('Resultado de Wompi completo:', result);
+
+                    if (result && result.status === 'APPROVED') {
+                        alert('¡Pago exitoso!');
+                        console.log('Pago aprobado, guardando transacción...');
+                        // Aquí puedes agregar la lógica para guardar la transacción en Supabase
+                    } else {
+                        const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
+                        console.error(errorMessage);
+                        alert(errorMessage);
+                    }
+                }, (error) => {
+                    console.error('Error en el widget de Wompi:', error);
+                    alert('Error al procesar el pago: ' + error.message);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
