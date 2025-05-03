@@ -58,23 +58,9 @@
     </div>
 
     <script>
-        // Fetch environment variables from Vercel (client-side workaround)
-        async function fetchEnvVariables() {
-            try {
-                const response = await fetch('/api/env');
-                const env = await response.json();
-                return {
-                    publicKey: env.WOMPI_PUBLIC_KEY || 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
-                    integrityKey: env.WOMPI_INTEGRITY_KEY || 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq'
-                };
-            } catch (error) {
-                console.error('Error al cargar variables de entorno:', error);
-                return {
-                    publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
-                    integrityKey: 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq'
-                };
-            }
-        }
+        // Definir las claves directamente (usar variables de entorno sería ideal, pero requeriría backend)
+        const publicKey = 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ';
+        const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
 
         // Función para esperar a que Wompi esté cargado
         function waitForWompi() {
@@ -133,9 +119,7 @@
 
             productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
 
-            // Cargar las variables de entorno
-            const { publicKey, integrityKey } = await fetchEnvVariables();
-            console.log('Claves cargadas:', { publicKey, integrityKey });
+            console.log('Claves usadas:', { publicKey, integrityKey });
 
             try {
                 // Esperar a que Wompi esté cargado
@@ -144,7 +128,7 @@
                 payButton.disabled = false;
             } catch (error) {
                 console.error(error.message);
-                alert('Error: No se pudo cargar el sistema de pago. Intenta de nuevo más tarde.');
+                alert('Error: No se pudo cargar el sistema de pago. Intenta de nuevo más tarde. Contacta a soporte si persiste.');
                 return;
             }
 
