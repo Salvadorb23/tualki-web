@@ -17,6 +17,7 @@
 
         body {
             background-color: #f5f5f5;
+            font-size: 16px;
         }
 
         header {
@@ -25,6 +26,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: relative;
         }
 
         .logo img {
@@ -72,6 +74,7 @@
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             z-index: 1000;
+            min-width: 150px;
         }
 
         .dropdown a {
@@ -89,6 +92,10 @@
             display: block;
         }
 
+        .dropdown.active {
+            display: block;
+        }
+
         .notification {
             position: relative;
             margin-right: 10px;
@@ -96,6 +103,7 @@
 
         .notification img {
             height: 24px;
+            cursor: pointer;
         }
 
         .notification .badge {
@@ -109,9 +117,42 @@
             font-size: 12px;
         }
 
-        .country-flag img {
+        .country-select {
+            position: relative;
+        }
+
+        .country-select img {
             height: 24px;
             border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .country-dropdown {
+            display: none;
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            min-width: 100px;
+        }
+
+        .country-dropdown a {
+            display: block;
+            padding: 5px 10px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .country-dropdown a:hover {
+            background-color: #f0f0f0;
+        }
+
+        .country-select:hover .country-dropdown {
+            display: block;
         }
 
         .categories-bar {
@@ -120,24 +161,32 @@
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .categories-bar a {
             color: #333;
             text-decoration: none;
-            white-space: nowrap;
+            padding: 5px 10px;
+            background-color: #fff;
+            border-radius: 15px;
+            border: 1px solid #ccc;
+            transition: all 0.3s;
         }
 
         .categories-bar a:hover {
-            text-decoration: underline;
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
         }
 
         .ad-bar {
             background-color: #d3d3d3;
             color: #333;
             text-align: center;
-            padding: 5px;
+            padding: 10px;
             font-size: 14px;
+            height: 50px; /* Espacio reservado para anuncios */
         }
 
         .container {
@@ -150,11 +199,13 @@
             font-size: 24px;
             margin-bottom: 10px;
             color: #ff6200;
+            text-align: center;
         }
 
         p {
             color: #666;
             margin-bottom: 20px;
+            text-align: center;
         }
 
         .search-filter {
@@ -162,6 +213,7 @@
             gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .search-filter input {
@@ -178,6 +230,7 @@
             gap: 10px;
             flex-wrap: wrap;
             margin-top: 10px;
+            justify-content: center;
         }
 
         .filters button {
@@ -258,7 +311,7 @@
             background-color: #5a6268;
         }
 
-        /* Estilo de la Modal Personalizada */
+        /* Modal Personalizada */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -306,12 +359,48 @@
         .modal-content button:hover {
             background-color: #0056b3;
         }
+
+        /* Responsividad */
+        @media (max-width: 768px) {
+            header {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            nav {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .user-profile, .notification, .country-select {
+                margin: 0 5px;
+            }
+
+            .dropdown, .country-dropdown {
+                top: 50px;
+            }
+
+            .categories-bar {
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            .search-filter, .filters {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .search-filter input {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="logo">
-            <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//Logo%20tualki%20para%20web.png">
+            <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//Logo%20tualki%20para%20web.png" alt="Tualki Logo">
         </div>
         <nav>
             <a href="index.html">Inicio</a>
@@ -320,7 +409,7 @@
             <div class="user-profile">
                 <span id="username">Nombre de usuario</span>
                 <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//perfil.png" alt="Perfil">
-                <div class="dropdown">
+                <div class="dropdown" id="profile-dropdown">
                     <a href="index.html">Inicio</a>
                     <a href="publish.html">Publicar</a>
                     <a href="deliveries.html">Mis pedidos</a>
@@ -328,12 +417,15 @@
                     <a href="#" id="logout">Cerrar sesión</a>
                 </div>
             </div>
-            <div class="notification">
+            <a href="messages.html" class="notification">
                 <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//notificaciones.png" alt="Notificaciones">
                 <span class="badge">2</span>
-            </div>
-            <div class="country-flag">
-                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//bandera%20de%20colombia.png" alt="Bandera de Colombia">
+            </a>
+            <div class="country-select">
+                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//bandera%20de%20colombia.png" alt="Bandera de Colombia" id="country-flag">
+                <div class="country-dropdown" id="country-dropdown">
+                    <a href="#" data-country="co"><img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//bandera%20de%20colombia.png" alt="Colombia"> Colombia</a>
+                </div>
             </div>
         </nav>
     </header>
@@ -374,7 +466,7 @@
     <!-- Modal para Alertas Personalizadas -->
     <div class="modal-overlay" id="custom-alert">
         <div class="modal-content">
-            <img src="https://via.placeholder.com/40x40.png?text=Tualki" alt="Tualki Logo">
+            <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//Logo%20tualki%20para%20web.png" alt="Tualki Logo">
             <p id="custom-alert-message"></p>
             <button onclick="closeCustomAlert()">Cerrar</button>
         </div>
@@ -398,7 +490,7 @@
         // Reemplazar alert nativo por el personalizado
         window.alert = showCustomAlert;
 
-        // Mostrar nombre de usuario dinámicamente
+        // Mostrar nombre de usuario dinámicamente y cargar productos
         document.addEventListener('DOMContentLoaded', async () => {
             const usernameElement = document.getElementById('username');
             const supabase = window.supabase.createClient(
@@ -409,6 +501,111 @@
             if (session.session) {
                 usernameElement.textContent = session.session.user.email.split('@')[0];
             }
+
+            // Cargar productos
+            const productsList = document.getElementById('products-list');
+            const searchBar = document.getElementById('search-bar');
+
+            const loadProducts = async () => {
+                let query = supabase.from('products').select('*');
+
+                const searchTerm = searchBar.value.toLowerCase();
+                if (searchTerm) {
+                    query = query.ilike('name', `%${searchTerm}%`);
+                }
+
+                const { data: products, error } = await query;
+                if (error) {
+                    console.error('Error al cargar productos:', error.message);
+                    productsList.innerHTML = '<p>Error al cargar los productos: ' + error.message + '</p>';
+                    return;
+                }
+
+                if (products.length === 0) {
+                    productsList.innerHTML = '<p>No hay productos disponibles.</p>';
+                    return;
+                }
+
+                productsList.innerHTML = products.map(product => {
+                    const photoUrl = product.photos && product.photos.length > 0 ? product.photos[0] : null;
+                    return `
+                        <div class="product">
+                            ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image">` : '<p>No image available</p>'}
+                            <div class="details">
+                                <h3>${product.name}</h3>
+                                <p>${product.description}</p>
+                                <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
+                                ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
+                                <a href="rent.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}&seller_id=${product.user_id}" class="button">Alquilar</a>
+                                ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            if (productsList) {
+                loadProducts();
+                searchBar.addEventListener('input', loadProducts);
+            }
+
+            // Controlar dropdown del perfil
+            const profileDropdown = document.getElementById('profile-dropdown');
+            let isDropdownOpen = false;
+
+            document.querySelector('.user-profile').addEventListener('click', () => {
+                isDropdownOpen = !isDropdownOpen;
+                profileDropdown.classList.toggle('active', isDropdownOpen);
+            });
+
+            document.querySelector('.user-profile').addEventListener('mouseleave', () => {
+                if (isDropdownOpen) {
+                    setTimeout(() => {
+                        if (!profileDropdown.matches(':hover')) {
+                            profileDropdown.classList.remove('active');
+                            isDropdownOpen = false;
+                        }
+                    }, 200);
+                }
+            });
+
+            profileDropdown.addEventListener('mouseleave', () => {
+                setTimeout(() => {
+                    if (!profileDropdown.matches(':hover') && !document.querySelector('.user-profile').matches(':hover')) {
+                        profileDropdown.classList.remove('active');
+                        isDropdownOpen = false;
+                    }
+                }, 200);
+            });
+
+            // Cerrar sesión
+            document.getElementById('logout').addEventListener('click', async () => {
+                await supabase.auth.signOut();
+                window.location.href = 'login.html';
+            });
+
+            // Controlar dropdown de país
+            const countryDropdown = document.getElementById('country-dropdown');
+            document.getElementById('country-flag').addEventListener('click', () => {
+                countryDropdown.style.display = countryDropdown.style.display === 'block' ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!countryDropdown.contains(e.target) && e.target !== document.getElementById('country-flag')) {
+                    countryDropdown.style.display = 'none';
+                }
+            });
+
+            // Seleccionar país
+            countryDropdown.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const countryCode = link.getAttribute('data-country');
+                    document.getElementById('country-flag').src = link.querySelector('img').src;
+                    countryDropdown.style.display = 'none';
+                    // Aquí puedes agregar lógica para guardar la selección del país
+                });
+            });
         });
     </script>
 </body>
