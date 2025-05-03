@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const { data: products, error } = await query;
+            console.log('Datos de productos:', products, 'Error:', error); // Log para depuración
 
             if (error) {
                 console.error('Error al cargar productos:', error.message);
@@ -215,105 +216,105 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Código para la página de mensajes (messages.html)
-if (window.location.pathname.includes('messages.html')) {
-    const messagesList = document.getElementById('messages-list');
-    const sendMessageForm = document.getElementById('send-message-form');
+    if (window.location.pathname.includes('messages.html')) {
+        const messagesList = document.getElementById('messages-list');
+        const sendMessageForm = document.getElementById('send-message-form');
 
-    const loadMessages = async () => {
-        const { data: session } = await supabase.auth.getSession();
-        if (!session.session) {
-            alert('Por favor, inicia sesión para ver tus mensajes.');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .or(`sender_id.eq.${session.session.user.id},receiver_id.eq.${session.session.user.id}`);
-
-        if (error) {
-            console.error('Error al cargar mensajes:', error.message);
-            messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
-            return;
-        }
-
-        if (data.length === 0) {
-            messagesList.innerHTML = '<p>No hay mensajes disponibles.</p>';
-            return;
-        }
-
-        messagesList.innerHTML = data.map(message => `
-            <div class="message">
-                <p><strong>De:</strong> ${message.sender_id}</p>
-                <p><strong>Para:</strong> ${message.receiver_id}</p>
-                <p>${message.content}</p>
-                <p><small>Enviado: ${new Date(message.created_at).toLocaleString()}</small></p>
-            </div>
-        `).join('');
-    };
-
-    if (messagesList) {
-        await loadMessages();
-        // Suscribirse a cambios en tiempo real (Realtime)
-        supabase
-            .channel('messages')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${session.session.user.id}` }, (payload) => {
-                console.log('Nuevo mensaje recibido:', payload);
-                loadMessages();
-            })
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `sender_id=eq.${session.session.user.id}` }, (payload) => {
-                console.log('Nuevo mensaje enviado:', payload);
-                loadMessages();
-            })
-            .subscribe();
-    }
-
-    if (sendMessageForm) {
-        sendMessageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        const loadMessages = async () => {
             const { data: session } = await supabase.auth.getSession();
             if (!session.session) {
-                alert('Por favor, inicia sesión para enviar un mensaje.');
+                alert('Por favor, inicia sesión para ver tus mensajes.');
                 window.location.href = 'login.html';
                 return;
             }
 
-            const receiverEmail = document.getElementById('receiver-email').value;
-            const content = document.getElementById('message-content').value;
-
-            const { data: receiver, error: receiverError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('email', receiverEmail)
-                .single();
-
-            if (receiverError || !receiver) {
-                console.error('Error al buscar el destinatario:', receiverError?.message);
-                alert('El correo del destinatario no existe.');
-                return;
-            }
-
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('messages')
-                .insert({
-                    sender_id: session.session.user.id,
-                    receiver_id: receiver.id,
-                    content
-                });
+                .select('*')
+                .or(`sender_id.eq.${session.session.user.id},receiver_id.eq.${session.session.user.id}`);
 
             if (error) {
-                console.error('Error al enviar mensaje:', error.message);
-                alert('Error al enviar mensaje: ' + error.message);
+                console.error('Error al cargar mensajes:', error.message);
+                messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
                 return;
             }
 
-            alert('Mensaje enviado con éxito!');
-            sendMessageForm.reset();
+            if (data.length === 0) {
+                messagesList.innerHTML = '<p>No hay mensajes disponibles.</p>';
+                return;
+            }
+
+            messagesList.innerHTML = data.map(message => `
+                <div class="message">
+                    <p><strong>De:</strong> ${message.sender_id}</p>
+                    <p><strong>Para:</strong> ${message.receiver_id}</p>
+                    <p>${message.content}</p>
+                    <p><small>Enviado: ${new Date(message.created_at).toLocaleString()}</small></p>
+                </div>
+            `).join('');
+        };
+
+        if (messagesList) {
             await loadMessages();
-        });
+            // Suscribirse a cambios en tiempo real (Realtime)
+            supabase
+                .channel('messages')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${session.session.user.id}` }, (payload) => {
+                    console.log('Nuevo mensaje recibido:', payload);
+                    loadMessages();
+                })
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `sender_id=eq.${session.session.user.id}` }, (payload) => {
+                    console.log('Nuevo mensaje enviado:', payload);
+                    loadMessages();
+                })
+                .subscribe();
+        }
+
+        if (sendMessageForm) {
+            sendMessageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const { data: session } = await supabase.auth.getSession();
+                if (!session.session) {
+                    alert('Por favor, inicia sesión para enviar un mensaje.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const receiverEmail = document.getElementById('receiver-email').value;
+                const content = document.getElementById('message-content').value;
+
+                const { data: receiver, error: receiverError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', receiverEmail)
+                    .single();
+
+                if (receiverError || !receiver) {
+                    console.error('Error al buscar el destinatario:', receiverError?.message);
+                    alert('El correo del destinatario no existe.');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('messages')
+                    .insert({
+                        sender_id: session.session.user.id,
+                        receiver_id: receiver.id,
+                        content
+                    });
+
+                if (error) {
+                    console.error('Error al enviar mensaje:', error.message);
+                    alert('Error al enviar mensaje: ' + error.message);
+                    return;
+                }
+
+                alert('Mensaje enviado con éxito!');
+                sendMessageForm.reset();
+                await loadMessages();
+            });
+        }
     }
-}
 
     // Código para la página de alquiler (rent.html)
     if (window.location.pathname.includes('rent.html')) {
@@ -390,7 +391,6 @@ if (window.location.pathname.includes('messages.html')) {
                 return;
             }
 
-            // Simulamos entregas basadas en transactions (ajusta según tu lógica)
             const { data, error } = await supabase
                 .from('transactions')
                 .select('*')
@@ -420,7 +420,6 @@ if (window.location.pathname.includes('messages.html')) {
 
         if (deliveriesList) {
             await loadDeliveries();
-            // Suscribirse a cambios en tiempo real (Realtime)
             supabase
                 .channel('deliveries')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, loadDeliveries)
@@ -428,76 +427,77 @@ if (window.location.pathname.includes('messages.html')) {
         }
     }
 
-   // Código para la página de pago (pay.html)
-if (window.location.pathname.includes('pay.html')) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const name = urlParams.get('name');
-    const description = urlParams.get('description');
-    const pricePerDay = parseFloat(urlParams.get('price_per_day'));
-    const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
-    const action = urlParams.get('action');
+    // Código para la página de pago (pay.html)
+    if (window.location.pathname.includes('pay.html')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const name = urlParams.get('name');
+        const description = urlParams.get('description');
+        const pricePerDay = parseFloat(urlParams.get('price_per_day'));
+        const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
+        const action = urlParams.get('action');
 
-    const actionTitle = document.getElementById('action-title');
-    const productName = document.getElementById('product-name');
-    const productDescription = document.getElementById('product-description');
-    const productPrice = document.getElementById('product-price');
+        const actionTitle = document.getElementById('action-title');
+        const productName = document.getElementById('product-name');
+        const productDescription = document.getElementById('product-description');
+        const productPrice = document.getElementById('product-price');
 
-    productName.textContent = name || 'Producto desconocido';
-    productDescription.textContent = description || 'Sin descripción';
+        productName.textContent = name || 'Producto desconocido';
+        productDescription.textContent = description || 'Sin descripción';
 
-    let displayPrice;
-    if (action === 'rent') {
-        actionTitle.textContent = 'Alquilar Producto';
-        displayPrice = pricePerDay;
-    } else if (action === 'buy') {
-        actionTitle.textContent = 'Comprar Producto';
-        displayPrice = salePrice;
-    } else {
-        actionTitle.textContent = 'Error';
-        displayPrice = 0;
-        productPrice.textContent = 'Precio no disponible';
-        return;
+        let displayPrice;
+        if (action === 'rent') {
+            actionTitle.textContent = 'Alquilar Producto';
+            displayPrice = pricePerDay;
+        } else if (action === 'buy') {
+            actionTitle.textContent = 'Comprar Producto';
+            displayPrice = salePrice;
+        } else {
+            actionTitle.textContent = 'Error';
+            displayPrice = 0;
+            productPrice.textContent = 'Precio no disponible';
+            return;
+        }
+
+        productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+
+        const payButton = document.getElementById('pay-button');
+        payButton.addEventListener('click', async () => {
+            const amount = displayPrice;
+            const reference = 'TUALKI-' + Date.now();
+            const currency = 'COP';
+
+            // Clave de integridad (obtén esta clave desde el panel de Wompi)
+            const integrityKey = 'TU_CLAVE_DE_INTEGRIDAD_DE_PRUEBAS'; // Reemplaza con tu clave de integridad de pruebas
+
+            // Concatenar los valores para la firma (reference + amountInCents + currency + integrityKey)
+            const amountInCents = parseInt(amount) * 100;
+            const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
+
+            // Generar la firma usando SHA-256
+            const encoder = new TextEncoder();
+            const data = encoder.encode(stringToSign);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+            const wompiCheckout = new WidgetCheckout({
+                currency: 'COP',
+                amountInCents: amountInCents,
+                reference: reference,
+                publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
+                redirectUrl: 'https://tualki-web.vercel.app/index.html',
+                signature: {
+                    integrity: signature
+                }
+            });
+
+            wompiCheckout.open(function (result) {
+                if (result.status === 'APPROVED') {
+                    alert('¡Pago exitoso!');
+                } else {
+                    alert('Error en el pago: ' + result.status);
+                }
+            });
+        });
     }
-
-    productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
-
-    const payButton = document.getElementById('pay-button');
-    payButton.addEventListener('click', async () => {
-        const amount = displayPrice;
-        const reference = 'TUALKI-' + Date.now();
-        const currency = 'COP';
-
-        // Clave de integridad (obtén esta clave desde el panel de Wompi)
-        const integrityKey = 'TU_CLAVE_DE_INTEGRIDAD_DE_PRUEBAS'; // Reemplaza con tu clave de integridad de pruebas
-
-        // Concatenar los valores para la firma (reference + amountInCents + currency + integrityKey)
-        const amountInCents = parseInt(amount) * 100;
-        const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
-
-        // Generar la firma usando SHA-256
-        const encoder = new TextEncoder();
-        const data = encoder.encode(stringToSign);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        const wompiCheckout = new WidgetCheckout({
-            currency: 'COP',
-            amountInCents: amountInCents,
-            reference: reference,
-            publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ', // Reemplaza con tu clave pública de pruebas
-            redirectUrl: 'https://tualki-web.vercel.app/index.html',
-            signature: {
-                integrity: signature
-            }
-        });
-
-        wompiCheckout.open(function (result) {
-            if (result.status === 'APPROVED') {
-                alert('¡Pago exitoso!');
-            } else {
-                alert('Error en el pago: ' + result.status);
-            }
-        });
-    });
-}
+});
