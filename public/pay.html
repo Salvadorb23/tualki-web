@@ -57,11 +57,15 @@
     </div>
 
     <script>
-        // Claves de Wompi (deben estar en variables de entorno en producción)
+        const supabase = window.supabase.createClient(
+            'https://vrvwmlromomnynckppqz.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
+        );
+
         const publicKey = 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ';
         const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('Página cargada, configurando pago...');
 
             const urlParams = new URLSearchParams(window.location.search);
@@ -99,18 +103,41 @@
             productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
             payButton.disabled = false;
 
-            payButton.addEventListener('click', () => {
+            payButton.addEventListener('click', async () => {
                 console.log('Iniciando pago con enlace de Wompi...');
 
                 const amount = parseFloat(displayPrice);
-                const amountInCents = Math.floor(amount * 100); // Asegurarse de que sea un número entero
+                const amountInCents = Math.floor(amount * 100);
                 const reference = 'TUALKI-' + Date.now();
                 const redirectUrl = 'https://tualki-web.vercel.app/index.html';
                 const currency = 'COP';
 
                 console.log('Valores para el enlace de pago:', { amount, amountInCents, reference, currency, redirectUrl });
 
-                // Generar la firma (signature) para el enlace de pago
+                // Registrar la transacción en Supabase antes de redirigir
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError || !sessionData.session) {
+                    console.error('Error al obtener sesión:', sessionError?.message);
+                    alert('Debes iniciar sesión para realizar un pago.');
+                    return;
+                }
+
+                const { error: transactionError } = await supabase.from('transactions').insert({
+                    buyer_id: sessionData.session.user.id,
+                    product_id: productId,
+                    amount: amount,
+                    type: action,
+                    status: 'pending',
+                    reference: reference,
+                    created_at: new Date().toISOString()
+                });
+
+                if (transactionError) {
+                    console.error('Error al registrar la transacción:', transactionError.message);
+                    alert('Error al registrar la transacción: ' + transactionError.message);
+                    return;
+                }
+
                 const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
                 const encoder = new TextEncoder();
                 const data = encoder.encode(stringToSign);
@@ -119,11 +146,9 @@
                     const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
                     console.log('Firma generada:', signature);
 
-                    // Construir el enlace de pago de Wompi con parámetros correctamente codificados
-                    const paymentLink = `https://checkout.wompi.co/p/?public-key=${encodeURIComponent(publicKey)}&amount-in-cents=${amountInCents}&currency=${encodeURIComponent(currency)}&reference=${encodeURIComponent(reference)}&redirect-url=${encodeURIComponent(redirectUrl)}&signature:integrity=${encodeURIComponent(signature)}`;
+                    const paymentLink = `https://checkout.wompi.co/p/?public-key=${encodeURIComponent(publicKey)}&amount-in-cents=${amountInCents}¤cy=${encodeURIComponent(currency)}&reference=${encodeURIComponent(reference)}&redirect-url=${encodeURIComponent(redirectUrl)}&signature:integrity=${encodeURIComponent(signature)}`;
                     console.log('Enlace de pago generado:', paymentLink);
 
-                    // Redirigir al usuario al enlace de pago
                     window.location.href = paymentLink;
                 }).catch(error => {
                     console.error('Error al generar la firma:', error);
