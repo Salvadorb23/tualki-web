@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago - Tualki</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://checkout.wompi.co/widget.js" defer></script> <!-- Añadido 'defer' -->
+    <script src="https://checkout.wompi.co/widget.js" defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -55,6 +55,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('Página cargada, intentando cargar el script de Wompi...');
+
             const urlParams = new URLSearchParams(window.location.search);
             const name = urlParams.get('name');
             const description = urlParams.get('description');
@@ -102,16 +104,21 @@
                 // Verificar si el widget de Wompi está disponible
                 const checkWompi = () => {
                     return new Promise((resolve) => {
+                        console.log('Verificando si window.$wompi está disponible...');
                         const interval = setInterval(() => {
                             if (window.$wompi && typeof window.$wompi.initialize === 'function') {
+                                console.log('window.$wompi encontrado!');
                                 clearInterval(interval);
-                                resolve();
+                                resolve(true);
+                            } else {
+                                console.log('window.$wompi no está disponible aún...');
                             }
-                        }, 100); // Verifica cada 100ms
+                        }, 100);
                         setTimeout(() => {
                             clearInterval(interval);
-                            resolve(false); // Timeout después de 5 segundos
-                        }, 5000);
+                            console.log('Tiempo de espera agotado: window.$wompi no se cargó');
+                            resolve(false);
+                        }, 10000); // 10 segundos de espera
                     });
                 };
 
