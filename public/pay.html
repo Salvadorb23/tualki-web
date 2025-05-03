@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago - Tualki</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://checkout.wompi.co/widget.js" defer></script>
+    <script src="https://checkout.wompi.co/widget/v2/widget.js" defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,6 +58,24 @@
     </div>
 
     <script>
+        // Fetch environment variables from Vercel (client-side workaround)
+        async function fetchEnvVariables() {
+            try {
+                const response = await fetch('/api/env');
+                const env = await response.json();
+                return {
+                    publicKey: env.WOMPI_PUBLIC_KEY || 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
+                    integrityKey: env.WOMPI_INTEGRITY_KEY || 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq'
+                };
+            } catch (error) {
+                console.error('Error al cargar variables de entorno:', error);
+                return {
+                    publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
+                    integrityKey: 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq'
+                };
+            }
+        }
+
         // Función para esperar a que Wompi esté cargado
         function waitForWompi() {
             return new Promise((resolve, reject) => {
@@ -66,9 +84,11 @@
                 const interval = setInterval(() => {
                     if (window.WompiCheckout) {
                         clearInterval(interval);
+                        console.log('WompiCheckout está disponible');
                         resolve();
                     } else if (attempts >= maxAttempts) {
                         clearInterval(interval);
+                        console.error('No se pudo cargar WompiCheckout después de', maxAttempts, 'intentos');
                         reject(new Error('No se pudo cargar el script de Wompi'));
                     }
                     attempts++;
@@ -113,6 +133,10 @@
 
             productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
 
+            // Cargar las variables de entorno
+            const { publicKey, integrityKey } = await fetchEnvVariables();
+            console.log('Claves cargadas:', { publicKey, integrityKey });
+
             try {
                 // Esperar a que Wompi esté cargado
                 await waitForWompi();
@@ -130,8 +154,6 @@
                 const amount = displayPrice;
                 const reference = 'TUALKI-' + Date.now();
                 const currency = 'COP';
-                const publicKey = 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ';
-                const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
                 const redirectUrl = 'https://tualki-web.vercel.app/index.html';
 
                 console.log('Configurando Wompi con:', { amount, reference, currency, publicKey, redirectUrl });
