@@ -467,7 +467,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const currency = 'COP';
 
             // Clave de integridad (obtén esta clave desde el panel de Wompi)
-            const integrityKey = 'TU_CLAVE_DE_INTEGRIDAD_DE_PRUEBAS'; // Reemplaza con tu clave de integridad de pruebas
+            const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq'; 
+    // Reemplaza con tu clave de integridad de pruebas
 
             // Concatenar los valores para la firma (reference + amountInCents + currency + integrityKey)
             const amountInCents = parseInt(amount) * 100;
