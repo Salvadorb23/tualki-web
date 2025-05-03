@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <p>${product.description}</p>
                             <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
                             ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
-                            <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}" class="button">Alquilar</a>
+                            <a href="rent.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}&seller_id=${product.user_id}" class="button">Alquilar</a>
                             ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
                         </div>
                     </div>
@@ -305,6 +305,119 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sendMessageForm.reset();
                 await loadMessages();
             });
+        }
+    }
+
+    // Código para la página de alquiler (rent.html)
+    if (window.location.pathname.includes('rent.html')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const name = urlParams.get('name');
+        const description = urlParams.get('description');
+        const pricePerDay = parseFloat(urlParams.get('price_per_day'));
+        const action = urlParams.get('action');
+        const productId = urlParams.get('product_id');
+        const sellerId = urlParams.get('seller_id');
+
+        const actionTitle = document.getElementById('action-title');
+        const productName = document.getElementById('product-name');
+        const productDescription = document.getElementById('product-description');
+        const productPrice = document.getElementById('product-price');
+        const sendMessageForm = document.getElementById('send-message-form');
+        const payButton = document.getElementById('pay-button');
+
+        actionTitle.textContent = action === 'rent' ? 'Alquilar Producto' : 'Comprar Producto';
+        productName.textContent = name || 'Producto desconocido';
+        productDescription.textContent = description || 'Sin descripción';
+        productPrice.textContent = pricePerDay.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+
+        if (sendMessageForm) {
+            sendMessageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const { data: session } = await supabase.auth.getSession();
+                if (!session.session) {
+                    alert('Por favor, inicia sesión para enviar un mensaje.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const content = document.getElementById('message-content').value;
+
+                const { error } = await supabase
+                    .from('messages')
+                    .insert({
+                        sender_id: session.session.user.id,
+                        receiver_id: sellerId,
+                        content,
+                        product_id: productId
+                    });
+
+                if (error) {
+                    console.error('Error al enviar mensaje:', error.message);
+                    alert('Error al enviar mensaje: ' + error.message);
+                    return;
+                }
+
+                alert('Mensaje enviado con éxito al vendedor!');
+                sendMessageForm.style.display = 'none';
+                payButton.style.display = 'block';
+                sendMessageForm.reset();
+            });
+        }
+
+        if (payButton) {
+            payButton.addEventListener('click', () => {
+                window.location.href = `pay.html?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}&price_per_day=${pricePerDay}&action=${action}&product_id=${productId}`;
+            });
+        }
+    }
+
+    // Código para la página de entregas (deliveries.html)
+    if (window.location.pathname.includes('deliveries.html')) {
+        const deliveriesList = document.getElementById('deliveries-list');
+
+        const loadDeliveries = async () => {
+            const { data: session } = await supabase.auth.getSession();
+            if (!session.session) {
+                alert('Por favor, inicia sesión para ver tus entregas.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Simulamos entregas basadas en transactions (ajusta según tu lógica)
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('*')
+                .eq('buyer_id', session.session.user.id)
+                .or('seller_id.eq.' + session.session.user.id);
+
+            if (error) {
+                console.error('Error al cargar entregas:', error.message);
+                deliveriesList.innerHTML = '<p>Error al cargar las entregas: ' + error.message + '</p>';
+                return;
+            }
+
+            if (data.length === 0) {
+                deliveriesList.innerHTML = '<p>No hay entregas disponibles.</p>';
+                return;
+            }
+
+            deliveriesList.innerHTML = data.map(delivery => `
+                <div class="delivery">
+                    <p><strong>Producto:</strong> ${delivery.product_id}</p>
+                    <p><strong>Tipo:</strong> ${delivery.type}</p>
+                    <p><strong>Estado:</strong> ${delivery.status || 'Pendiente'}</p>
+                    <p><small>Fecha: ${delivery.rental_start ? new Date(delivery.rental_start).toLocaleString() : 'Sin fecha'}</small></p>
+                </div>
+            `).join('');
+        };
+
+        if (deliveriesList) {
+            await loadDeliveries();
+            // Suscribirse a cambios en tiempo real (Realtime)
+            supabase
+                .channel('deliveries')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, loadDeliveries)
+                .subscribe();
         }
     }
 
