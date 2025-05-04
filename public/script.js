@@ -11,29 +11,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
 
     const usernameElement = document.getElementById('username');
+    let user = null;
     const { data: session } = await supabase.auth.getSession();
-    if (session.session && usernameElement) {
-        const { data: user } = await supabase
+    if (session?.session && usernameElement) {
+        const { data: userData, error: userError } = await supabase
             .from('users')
             .select('email, verified, first_name, last_name, id_card_front, id_card_back, location')
             .eq('id', session.session.user.id)
             .single();
-        if (!user.verified) {
-            alert('Por favor, completa la verificación de tu cuenta para continuar.');
-            window.location.href = 'verify.html';
-            return;
+        
+        if (userError || !userData) {
+            console.error('Error al obtener datos del usuario:', userError?.message || 'Usuario no encontrado');
+            usernameElement.textContent = 'Iniciar Sesión';
+            usernameElement.setAttribute('href', 'login.html');
+        } else {
+            user = userData;
+            if (!user.verified) {
+                alert('Por favor, completa la verificación de tu cuenta para continuar.');
+                window.location.href = 'verify.html';
+                return;
+            }
+            usernameElement.textContent = `${user.first_name} ${user.last_name}`;
+            document.getElementById('logout').addEventListener('click', async () => {
+                await supabase.auth.signOut();
+                window.location.href = 'login.html';
+            });
         }
-        usernameElement.textContent = `${user.first_name} ${user.last_name}`;
-        document.getElementById('logout').addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            window.location.href = 'login.html';
-        });
     } else if (usernameElement) {
         usernameElement.textContent = 'Iniciar Sesión';
         usernameElement.setAttribute('href', 'login.html');
     }
 
-    if ((window.location.pathname.includes('login.html') || window.location.pathname.includes('signup.html')) && session.session) {
+    if ((window.location.pathname.includes('login.html') || window.location.pathname.includes('signup.html')) && session?.session) {
         window.location.href = 'index.html';
     }
 
@@ -54,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let userFavorites = new Set();
 
         const loadFavorites = async () => {
-            if (!session.session) return;
+            if (!session?.session) return;
             const { data: favorites, error } = await supabase
                 .from('favorites')
                 .select('product_id')
@@ -68,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const toggleFavorite = async (productId, button) => {
-            if (!session.session || !(await checkVerification())) {
+            if (!session?.session || !(await checkVerification())) {
                 alert('Por favor, verifica tu cuenta para gestionar favoritos.');
                 window.location.href = 'verify.html';
                 return;
@@ -102,13 +111,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const checkVerification = async () => {
-            if (!session.session) return false;
-            const { data: user } = await supabase
+            if (!session?.session) return false;
+            const { data: userData, error } = await supabase
                 .from('users')
                 .select('verified')
                 .eq('id', session.session.user.id)
                 .single();
-            return user.verified;
+            if (error || !userData) {
+                console.error('Error al verificar usuario:', error?.message || 'Usuario no encontrado');
+                return false;
+            }
+            return userData.verified;
         };
 
         const loadProducts = async () => {
@@ -117,13 +130,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const searchTerm = searchBar ? searchBar.value.toLowerCase() : '';
             const maxPrice = maxPriceInput ? parseFloat(maxPriceInput.value) : Infinity;
             const location = locationInput ? locationInput.value.toLowerCase() : '';
-            const radius = radiusInput ? parseFloat(radiusInput.value) || 0 : 0;
-            const userLocation = session?.session ? (await supabase.from('users').select('location').eq('id', session.session.user.id).single()).data.location : { lat: 4.7110, lng: -74.0721 };
 
             if (searchTerm) query = query.ilike('name', `%${searchTerm}%`);
             if (maxPrice < Infinity) query = query.lte('price_per_day', maxPrice);
             if (location) query = query.ilike('location', `%${location}%`);
-            if (currentFilter === 'favorites' && session.session) query = query.in('id', Array.from(userFavorites));
+            if (currentFilter === 'favorites' && session?.session) query = query.in('id', Array.from(userFavorites));
             else if (currentFilter === 'recent') query = query.order('created_at', { ascending: false });
             else if (currentFilter !== 'all' && currentFilter !== 'more') query = query.eq('category', currentFilter);
 
@@ -133,6 +144,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 productsList.innerHTML = '<p>Error al cargar los productos: ' + error.message + '</p>';
                 return;
             }
+
+            console.log('Productos recibidos de Supabase:', products); // Mensaje de depuración
 
             if (products.length === 0) {
                 productsList.innerHTML = '<p>No hay productos disponibles.</p>';
@@ -177,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (productsList) {
             await loadFavorites();
-            loadProducts();
+            await loadProducts();
             if (searchBar) searchBar.addEventListener('input', loadProducts);
             if (maxPriceInput) maxPriceInput.addEventListener('input', loadProducts);
             if (locationInput) locationInput.addEventListener('input', loadProducts);
@@ -192,17 +205,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     loadProducts();
                 });
             });
-        }
-
-        function moveCarousel(button, direction) {
-            const carousel = button.parentElement;
-            const inner = carousel.querySelector('.carousel-inner');
-            let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
-            const items = carousel.querySelectorAll('.carousel-item').length;
-            currentTranslate += direction * 100;
-            if (currentTranslate > 0) currentTranslate = 0;
-            if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
-            inner.style.transform = `translateX(${currentTranslate}%)`;
         }
     }
 
@@ -281,12 +283,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                const { data: user } = await supabase
+                const { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('verified')
                     .eq('id', data.user.id)
                     .single();
-                if (!user.verified) {
+                if (userError || !userData) {
+                    console.error('Error al verificar usuario:', userError?.message || 'Usuario no encontrado');
+                    alert('Error al verificar tu cuenta. Contacta al soporte.');
+                    await supabase.auth.signOut();
+                    return;
+                }
+                if (!userData.verified) {
                     alert('Tu cuenta aún no ha sido verificada. Espera aprobación manual.');
                     await supabase.auth.signOut();
                     return;
@@ -395,19 +403,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             actionTitle.textContent = action === 'rent' ? 'Alquilar Producto' : 'Comprar Producto';
             productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
 
-            const { data: product } = await supabase
+            const { data: product, error: productError } = await supabase
                 .from('products')
                 .select('photos')
                 .eq('id', productId)
                 .single();
+            if (productError) {
+                console.error('Error al cargar fotos del producto:', productError.message);
+                alert('Error al cargar fotos del producto: ' + productError.message);
+                return;
+            }
             const photos = product.photos || [null];
             carouselInner.innerHTML = photos.map(photo => `<img src="${photo || 'https://via.placeholder.com/600x300?text=Sin+Imagen'}" alt="${name}" class="carousel-item">`).join('');
 
-            const { data: seller } = await supabase
+            const { data: seller, error: sellerError } = await supabase
                 .from('users')
                 .select('first_name, last_name, reviews, rating')
                 .eq('id', sellerId)
                 .single();
+            if (sellerError) {
+                console.error('Error al cargar datos del vendedor:', sellerError.message);
+                alert('Error al cargar datos del vendedor: ' + sellerError.message);
+                return;
+            }
             sellerName.textContent = `${seller.first_name} ${seller.last_name}`;
             sellerReviews.textContent = seller.reviews || 'Sin reseñas';
             sellerRating.textContent = (seller.rating || 0).toFixed(1);
@@ -545,6 +563,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
+function showCustomAlert(message) {
+    const modal = document.getElementById('custom-alert');
+    const messageElement = document.getElementById('custom-alert-message');
+    if (modal && messageElement) {
+        messageElement.textContent = message;
+        modal.style.display = 'flex';
+    }
+}
+
+function closeCustomAlert() {
+    const modal = document.getElementById('custom-alert');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+window.alert = showCustomAlert;
 
 function moveCarousel(button, direction) {
     const carousel = button.parentElement;
