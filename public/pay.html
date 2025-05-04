@@ -3,134 +3,425 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pago - Tualki</title>
+    <title>Publicar Producto - Tualki</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
-        .container {
-            text-align: center;
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
+
+        body {
+            background-color: #f5f5f5;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #007bff;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-        h2 {
+
+        .logo img {
+            height: 60px;
+            transition: transform 0.3s;
+        }
+
+        .logo img:hover {
+            transform: scale(1.1);
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 16px;
+        }
+
+        nav a:hover {
+            background-color: #0056b3;
+            color: #fff;
+        }
+
+        .user-profile {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .user-profile img {
+            height: 35px;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .user-profile img:hover {
+            transform: scale(1.1);
+        }
+
+        .dropdown {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: #ff6200;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            min-width: 180px;
+            padding: 5px 0;
+        }
+
+        .dropdown a {
+            display: block;
+            padding: 12px 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .dropdown a:hover {
+            background-color: #e65a00;
+        }
+
+        .user-profile:hover .dropdown {
+            display: block;
+        }
+
+        .notification {
+            position: relative;
+            margin-right: 15px;
+        }
+
+        .notification img {
+            height: 28px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .notification img:hover {
+            transform: scale(1.1);
+        }
+
+        .notification .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .country-select {
+            position: relative;
+        }
+
+        .country-select img {
+            height: 28px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .country-select img:hover {
+            transform: scale(1.1);
+        }
+
+        .country-dropdown {
+            display: none;
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            min-width: 120px;
+        }
+
+        .country-dropdown a {
+            display: block;
+            padding: 8px 15px;
+            color: #333;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .country-dropdown a:hover {
+            background-color: #f0f0f0;
+        }
+
+        .country-select:hover .country-dropdown {
+            display: block;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
             color: #ff6200;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        form {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
             margin-bottom: 20px;
         }
-        p {
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #007bff;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group input[type="file"] {
+            padding: 8px 0;
+        }
+
+        .rental-type {
+            display: flex;
+            gap: 15px;
             margin-bottom: 10px;
         }
-        button {
+
+        .rental-type label {
+            margin: 0;
+        }
+
+        button[type="submit"] {
             background-color: #007bff;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 25px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            transition: background-color 0.3s;
         }
-        button:hover {
+
+        button[type="submit"]:hover {
             background-color: #0056b3;
         }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .logo img {
+                height: 50px;
+            }
+
+            nav {
+                flex-direction: column;
+                gap: 10px;
+                width: 100%;
+            }
+
+            nav a {
+                padding: 8px 15px;
+                width: 100%;
+                text-align: center;
+            }
+
+            .user-profile, .notification, .country-select {
+                margin: 0;
+            }
+
+            .dropdown, .country-dropdown {
+                top: 40px;
+                right: 0;
+                left: 0;
+                margin: 0 auto;
+                width: 90%;
+                max-width: 200px;
+            }
+
+            .container {
+                margin: 20px auto;
+                padding: 0 15px;
+            }
+
+            form {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .form-group label {
+                font-size: 14px;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                padding: 10px;
+                font-size: 13px;
+            }
+
+            button[type="submit"] {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                max-width: 700px;
+            }
         }
     </style>
 </head>
 <body>
+    <header>
+        <div class="logo">
+            <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//Logo%20tualki%20para%20web.png" alt="Tualki Logo">
+        </div>
+        <nav>
+            <a href="index.html">Inicio</a>
+            <a href="publish.html">Publicar</a>
+            <a href="deliveries.html">Mis pedidos</a>
+            <div class="user-profile">
+                <span id="username">Nombre de usuario</span>
+                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//perfil.png" alt="Perfil">
+                <div class="dropdown" id="profile-dropdown">
+                    <a href="index.html">Inicio</a>
+                    <a href="publish.html">Publicar</a>
+                    <a href="deliveries.html">Mis pedidos</a>
+                    <a href="#">Ajustes</a>
+                    <a href="#" id="logout">Cerrar sesión</a>
+                </div>
+            </div>
+            <a href="messages.html" class="notification">
+                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//notificaciones.png" alt="Notificaciones">
+                <span class="badge">2</span>
+            </a>
+            <div class="country-select">
+                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//bandera%20de%20colombia.png" alt="Bandera de Colombia" id="country-flag">
+                <div class="country-dropdown" id="country-dropdown">
+                    <a href="#" data-country="co"><img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//bandera%20de%20colombia.png" alt="Colombia"> Colombia</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
     <div class="container">
-        <h2 id="action-title"></h2>
-        <p><strong>Producto:</strong> <span id="product-name"></span></p>
-        <p><span id="product-description"></span></p>
-        <p><strong>Precio:</strong> <span id="product-price"></span></p>
-        <button id="pay-button" disabled>Pagar</button>
+        <h1>Publicar un Producto</h1>
+        <form id="publish-form">
+            <div class="form-group">
+                <label for="name">Nombre del Producto</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="category">Categoría</label>
+                <select id="category" name="category" required>
+                    <option value="Electrónica">Electrónica</option>
+                    <option value="Eventos">Eventos</option>
+                    <option value="Hogar">Hogar</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tipo de Oferta</label>
+                <div class="rental-type">
+                    <label><input type="radio" name="rental_type" value="rent" required> Solo Alquiler</label>
+                    <label><input type="radio" name="rental_type" value="rent_sell"> Alquiler y Venta</label>
+                    <label><input type="radio" name="rental_type" value="sell"> Solo Venta</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="price_per_day">Precio por Día (COP, si aplica)</label>
+                <input type="number" id="price_per_day" name="price_per_day" required>
+            </div>
+            <div class="form-group">
+                <label for="sale_price">Precio de Venta (COP, si aplica)</label>
+                <input type="number" id="sale_price" name="sale_price">
+            </div>
+            <div class="form-group">
+                <label for="images">Imágenes (máximo 5)</label>
+                <input type="file" id="images" name="images" accept="image/*" multiple required>
+            </div>
+            <div class="form-group">
+                <label for="location">Ubicación (ej. Calle 123 #45-67, Bogotá)</label>
+                <input type="text" id="location" name="location" required>
+            </div>
+            <button type="submit">Publicar Producto</button>
+        </form>
     </div>
 
-    <script>
-        // Claves de Wompi (deben estar en variables de entorno en producción)
-        const publicKey = 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ';
-        const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
-
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Página cargada, configurando pago...');
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const name = urlParams.get('name');
-            const description = urlParams.get('description');
-            const pricePerDay = parseFloat(urlParams.get('price_per_day'));
-            const salePrice = urlParams.get('sale_price') ? parseFloat(urlParams.get('sale_price')) : null;
-            const action = urlParams.get('action');
-            const productId = urlParams.get('product_id');
-
-            const actionTitle = document.getElementById('action-title');
-            const productName = document.getElementById('product-name');
-            const productDescription = document.getElementById('product-description');
-            const productPrice = document.getElementById('product-price');
-            const payButton = document.getElementById('pay-button');
-
-            productName.textContent = name || 'Producto desconocido';
-            productDescription.textContent = description || 'Sin descripción';
-
-            let displayPrice;
-            if (action === 'rent') {
-                actionTitle.textContent = 'Alquilar Producto';
-                displayPrice = pricePerDay;
-            } else if (action === 'buy') {
-                actionTitle.textContent = 'Comprar Producto';
-                displayPrice = salePrice;
-            } else {
-                actionTitle.textContent = 'Error';
-                displayPrice = 0;
-                productPrice.textContent = 'Precio no disponible';
-                console.error('Acción no válida:', action);
-                return;
-            }
-
-            productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
-            payButton.disabled = false;
-
-            payButton.addEventListener('click', () => {
-                console.log('Iniciando pago con enlace de Wompi...');
-
-                const amount = parseFloat(displayPrice);
-                const amountInCents = Math.floor(amount * 100); // Asegurarse de que sea un número entero
-                const reference = 'TUALKI-' + Date.now();
-                const redirectUrl = 'https://tualki-web.vercel.app/index.html';
-                const currency = 'COP';
-
-                console.log('Valores para el enlace de pago:', { amount, amountInCents, reference, currency, redirectUrl });
-
-                // Generar la firma (signature) para el enlace de pago
-                const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
-                const encoder = new TextEncoder();
-                const data = encoder.encode(stringToSign);
-                crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
-                    const hashArray = Array.from(new Uint8Array(hashBuffer));
-                    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                    console.log('Firma generada:', signature);
-
-                    // Construir el enlace de pago de Wompi con parámetros correctamente codificados
-                    const paymentLink = `https://checkout.wompi.co/p/?public-key=${encodeURIComponent(publicKey)}&amount-in-cents=${amountInCents}&currency=${encodeURIComponent(currency)}&reference=${encodeURIComponent(reference)}&redirect-url=${encodeURIComponent(redirectUrl)}&signature:integrity=${encodeURIComponent(signature)}`;
-                    console.log('Enlace de pago generado:', paymentLink);
-
-                    // Redirigir al usuario al enlace de pago
-                    window.location.href = paymentLink;
-                }).catch(error => {
-                    console.error('Error al generar la firma:', error);
-                    alert('Error al iniciar el pago. Intenta de nuevo.');
-                });
-            });
-        });
-    </script>
+    <script src="script.js" defer></script>
 </body>
 </html>
