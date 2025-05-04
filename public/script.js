@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     if (!window.supabase) {
         console.error('Error: La librería de Supabase no está cargada.');
-        alert('Error: No se pudo cargar Supabase. Revisa la consola.');
+        showCustomAlert('Error: No se pudo cargar Supabase. Revisa la consola.');
         return;
     }
 
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .eq('user_id', session.session.user.id);
             if (error) {
                 console.error('Error al cargar favoritos:', error.message);
-                alert('Error al cargar favoritos: ' + error.message);
+                showCustomAlert('Error al cargar favoritos: ' + error.message);
                 return;
             }
             userFavorites = new Set(favorites.map(fav => fav.product_id));
@@ -118,12 +118,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const toggleFavorite = async (productId, button) => {
             if (!session?.session) {
-                alert('Por favor, inicia sesión para gestionar favoritos.');
+                showCustomAlert('Por favor, inicia sesión para gestionar favoritos.');
                 window.location.href = 'login.html';
                 return;
             }
             if (!(await checkVerification())) {
-                alert('Para gestionar favoritos debe verificar su perfil.');
+                showCustomAlert('Para gestionar favoritos debe verificar su perfil.');
                 return;
             }
             try {
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (error) throw error;
                     userFavorites.delete(productId);
                     button.classList.remove('favorited');
-                    alert('Producto eliminado de favoritos.');
+                    showCustomAlert('Producto eliminado de favoritos.');
                 } else {
                     const { error } = await supabase
                         .from('favorites')
@@ -145,12 +145,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (error) throw error;
                     userFavorites.add(productId);
                     button.classList.add('favorited');
-                    alert('Producto añadido a favoritos.');
+                    showCustomAlert('Producto añadido a favoritos.');
                 }
                 if (currentFilter === 'favorites') loadProducts();
             } catch (error) {
                 console.error('Error al gestionar favorito:', error.message);
-                alert('Error: ' + error.message);
+                showCustomAlert('Error: ' + error.message);
             }
         };
 
@@ -175,8 +175,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            console.log('Productos recibidos de Supabase:', products);
-
             if (products.length === 0) {
                 productsList.innerHTML = '<p>No hay productos disponibles.</p>';
                 return;
@@ -193,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                             ${photos.length > 1 ? '<button class="carousel-prev" onclick="moveCarousel(this, -1)">❮</button><button class="carousel-next" onclick="moveCarousel(this, 1)">❯</button>' : ''}
                         </div>
-                        <button class="favorite-button ${isFavorited ? 'favorited' : ''}" data-product-id="${product.id}">
+                        <button class="favorite-button ${isFavorite ? 'favorited' : ''}" data-product-id="${product.id}">
                             <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                         </button>
                         <div class="details">
@@ -260,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (error) {
                     console.error('Error al registrarse:', error.message);
-                    alert('Error al registrarse: ' + error.message);
+                    showCustomAlert('Error al registrarse: ' + error.message);
                     return;
                 }
 
@@ -284,11 +282,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .eq('id', data.user.id);
                 if (updateError) {
                     console.error('Error al actualizar usuario:', updateError.message);
-                    alert('Error al guardar documentos: ' + updateError.message);
+                    showCustomAlert('Error al guardar documentos: ' + updateError.message);
                     return;
                 }
 
-                alert('¡Registro exitoso! Puedes verificar tu cuenta cuando desees desde tu perfil.');
+                showCustomAlert('¡Registro exitoso! Puedes verificar tu cuenta cuando desees desde tu perfil.');
                 window.location.href = 'index.html';
             });
         }
@@ -309,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (error) {
                     console.error('Error al iniciar sesión:', error.message);
-                    alert('Error al iniciar sesión: ' + error.message);
+                    showCustomAlert('Error al iniciar sesión: ' + error.message);
                     return;
                 }
 
@@ -320,12 +318,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .single();
                 if (userError || !userData) {
                     console.error('Error al verificar usuario:', userError?.message || 'Usuario no encontrado');
-                    alert('Error al verificar tu cuenta. Contacta al soporte.');
+                    showCustomAlert('Error al verificar tu cuenta. Contacta al soporte.');
                     await supabase.auth.signOut();
                     return;
                 }
 
-                alert('¡Inicio de sesión exitoso!');
+                showCustomAlert('¡Inicio de sesión exitoso!');
                 window.location.href = 'index.html';
             });
         }
@@ -337,12 +335,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             publishForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!session?.session) {
-                    alert('Por favor, inicia sesión para publicar.');
+                    showCustomAlert('Por favor, inicia sesión para publicar.');
                     window.location.href = 'login.html';
                     return;
                 }
                 if (!(await checkVerification())) {
-                    alert('Para publicar debe verificar su perfil.');
+                    showCustomAlert('Para publicar debe verificar su perfil.');
                     return;
                 }
 
@@ -356,13 +354,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const location = document.getElementById('location').value;
 
                 if (!name || !category || !location || (rentalType !== 'sell' && !pricePerDay)) {
-                    alert('Por favor, completa todos los campos obligatorios (nombre, categoría, ubicación y precio por día si aplicable).');
+                    showCustomAlert('Por favor, completa todos los campos obligatorios (nombre, categoría, ubicación y precio por día si aplicable).');
                     return;
                 }
 
                 const { data: userData, error: userError } = await supabase.auth.getSession();
                 if (userError || !userData.session) {
-                    alert('Error de sesión. Inicia sesión nuevamente.');
+                    showCustomAlert('Error de sesión. Inicia sesión nuevamente.');
                     window.location.href = 'login.html';
                     return;
                 }
@@ -374,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         .upload(`${Date.now()}_${images[i].name}`, images[i]);
                     if (uploadError) {
                         console.error('Error al subir imagen:', uploadError.message);
-                        alert('Error al subir imagen: ' + uploadError.message);
+                        showCustomAlert('Error al subir imagen: ' + uploadError.message);
                         return;
                     }
                     const { data: urlData } = supabase.storage.from('tualki-images').getPublicUrl(uploadData.path);
@@ -399,11 +397,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (error) {
                     console.error('Error al publicar:', error.message);
-                    alert('Error al publicar: ' + error.message);
+                    showCustomAlert('Error al publicar: ' + error.message);
                     return;
                 }
 
-                alert('Producto enviado para aprobación. Te notificaremos cuando esté activo.');
+                showCustomAlert('Producto enviado para aprobación. Te notificaremos cuando esté activo.');
                 window.location.href = 'index.html';
             });
         }
@@ -429,6 +427,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sellerReviews = document.getElementById('seller-reviews');
         const sellerRating = document.getElementById('seller-rating');
         const sendMessageForm = document.getElementById('send-message-form');
+        const cancelButton = document.createElement('button'); // Botón para cancelar
+
+        // Agස: Agregar botón de cancelar en pay.html
+        if (sendMessageForm) {
+            cancelButton.textContent = 'Cancelar';
+            cancelButton.className = 'secondary-button';
+            cancelButton.style.marginLeft = '10px';
+            cancelButton.addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+            sendMessageForm.appendChild(cancelButton);
+        }
 
         if (actionTitle && productName && productDescription && productPrice && carouselInner && sellerName && sellerReviews && sellerRating && sendMessageForm) {
             productName.textContent = name || 'Producto desconocido';
@@ -444,7 +454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .single();
             if (productError) {
                 console.error('Error al cargar fotos del producto:', productError.message);
-                alert('Error al cargar fotos del producto: ' + productError.message);
+                showCustomAlert('Error al cargar fotos del producto: ' + productError.message);
             } else {
                 const photos = product.photos || [null];
                 carouselInner.innerHTML = photos.map(photo => `<img src="${photo || 'https://via.placeholder.com/600x300?text=Sin+Imagen'}" alt="${name}" class="carousel-item">`).join('');
@@ -457,35 +467,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .single();
             if (sellerError) {
                 console.error('Error al cargar datos del vendedor:', sellerError.message);
-                alert('Error al cargar datos del vendedor: ' + sellerError.message);
+                showCustomAlert('Error al cargar datos del vendedor: ' + sellerError.message);
             } else {
                 sellerName.textContent = `${seller.first_name} ${seller.last_name}`;
                 sellerReviews.textContent = seller.reviews || 'Sin reseñas';
                 sellerRating.textContent = (seller.rating || 0).toFixed(1);
             }
 
-            if (!session?.session) {
-                alert('Por favor, inicia sesión para realizar esta acción.');
-                window.location.href = 'login.html';
-                return;
-            }
-            if (!(await checkVerification())) {
-                alert('Para alquilar debe verificar su perfil.');
-                window.location.href = 'index.html';
-                return;
+            // Mostrar el botón de pago inicialmente como oculto
+            if (payButton) {
+                payButton.style.display = 'none';
             }
 
+            // Validar sesión y verificación solo al intentar enviar mensaje o pagar
             sendMessageForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+
+                if (!session?.session) {
+                    showCustomAlert('Por favor, inicia sesión para continuar.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                if (!(await checkVerification())) {
+                    showCustomAlert('Para alquilar o comprar, primero debes verificar tu perfil.');
+                    window.location.href = 'verify.html';
+                    return;
+                }
+
                 const messageContent = document.getElementById('message-content').value;
                 if (!messageContent) {
-                    alert('Por favor, escribe un mensaje al vendedor.');
+                    showCustomAlert('Por favor, escribe un mensaje al vendedor.');
                     return;
                 }
 
                 const { data: sender, error: senderError } = await supabase.auth.getSession();
                 if (senderError || !sender.session) {
-                    alert('Error de sesión. Inicia sesión nuevamente.');
+                    showCustomAlert('Error de sesión. Inicia sesión nuevamente.');
                     window.location.href = 'login.html';
                     return;
                 }
@@ -502,25 +520,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (messageError) {
                     console.error('Error al enviar mensaje:', messageError.message);
-                    alert('Error al enviar mensaje: ' + messageError.message);
+                    showCustomAlert('Error al enviar mensaje: ' + messageError.message);
                     return;
                 }
 
-                alert('Mensaje enviado al vendedor. Ahora puedes proceder con el pago.');
+                showCustomAlert('Mensaje enviado al vendedor. Ahora puedes proceder con el pago.');
                 sendMessageForm.style.display = 'none';
-                payButton.style.display = 'block';
+                if (payButton) {
+                    payButton.style.display = 'block';
+                }
             });
         }
 
         if (payButton) {
             payButton.addEventListener('click', async () => {
                 if (!session?.session) {
-                    alert('Por favor, inicia sesión para pagar.');
+                    showCustomAlert('Por favor, inicia sesión para pagar.');
                     window.location.href = 'login.html';
                     return;
                 }
                 if (!(await checkVerification())) {
-                    alert('Para alquilar debe verificar su perfil.');
+                    showCustomAlert('Para pagar, primero debes verificar tu perfil.');
+                    window.location.href = 'verify.html';
                     return;
                 }
 
@@ -537,7 +558,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const data = encoder.encode(stringToSign);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                const signature = hashArray.map(b => b.toString(16).padStart( banc2, '0')).join('');
 
                 const wompiCheckout = new WidgetCheckout({
                     currency: 'COP',
@@ -550,7 +571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 wompiCheckout.open(async function (result) {
                     if (result && result.status === 'APPROVED') {
-                        alert('¡Pago exitoso!');
+                        showCustomAlert('¡Pago exitoso! Transacción registrada.');
                         const { data: sessionData } = await supabase.auth.getSession();
                         if (sessionData.session) {
                             const { error } = await supabase
@@ -569,14 +590,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 });
                             if (error) {
                                 console.error('Error al guardar transacción:', error.message);
-                                alert('Pago exitoso, pero hubo un error al registrar: ' + error.message);
+                                showCustomAlert('Pago exitoso, pero hubo un error al registrar: ' + error.message);
                             }
                             window.location.href = 'https://tualki-web.vercel.app/index.html';
                         }
                     } else {
                         const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
                         console.error(errorMessage);
-                        alert(errorMessage);
+                        showCustomAlert(errorMessage);
                     }
                 });
             });
@@ -596,7 +617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const { data: session } = await supabase.auth.getSession();
                 if (!session.session) {
-                    alert('Por favor, inicia sesión primero.');
+                    showCustomAlert('Por favor, inicia sesión primero.');
                     window.location.href = 'login.html';
                     return;
                 }
@@ -621,11 +642,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .eq('id', session.session.user.id);
                 if (error) {
                     console.error('Error al verificar:', error.message);
-                    alert('Error al verificar: ' + error.message);
+                    showCustomAlert('Error al verificar: ' + error.message);
                     return;
                 }
 
-                alert('Datos enviados para aprobación. Espera confirmación manual.');
+                showCustomAlert('Datos enviados para aprobación. Espera confirmación manual.');
                 window.location.href = 'index.html';
             });
         }
@@ -664,7 +685,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const messageContent = document.getElementById('message-content').value;
 
                 if (!receiverEmail || !messageContent) {
-                    alert('Por favor, completa todos los campos.');
+                    showCustomAlert('Por favor, completa todos los campos.');
                     return;
                 }
 
@@ -674,7 +695,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .eq('email', receiverEmail)
                     .single();
                 if (receiverError || !receiver) {
-                    alert('No se encontró un usuario con ese correo.');
+                    showCustomAlert('No se encontró un usuario con ese correo.');
                     return;
                 }
 
@@ -688,9 +709,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 if (error) {
                     console.error('Error al enviar mensaje:', error.message);
-                    alert('Error al enviar mensaje: ' + error.message);
+                    showCustomAlert('Error al enviar mensaje: ' + error.message);
                 } else {
-                    alert('Mensaje enviado con éxito.');
+                    showCustomAlert('Mensaje enviado con éxito.');
                     document.getElementById('receiver-email').value = '';
                     document.getElementById('message-content').value = '';
                     if (messagesList) await loadMessages();
