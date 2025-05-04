@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar Perfil - Tualki</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="logo">Tualki</a>
+            <div class="nav-links">
+                <a href="index.html">Inicio</a>
+                <a href="publish.html">Publicar</a>
+                <a href="messages.html">Mis pedidos</a>
+                <a href="verify.html" id="verify-link">Verificar Perfil</a>
+                <a href="login.html" id="login-link">Iniciar Sesión</a>
+                <a href="signup.html" id="signup-link">Registrarse</a>
+                <a href="#" id="username"></a>
+                <a href="#" id="logout">Cerrar Sesión</a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <h1>Verificar Perfil</h1>
+        <p>Por favor, completa los siguientes datos para verificar tu perfil. Esto es necesario para alquilar o publicar productos.</p>
+        <form id="verify-form">
+            <label for="first_name">Nombre:</label>
+            <input type="text" id="first_name" name="first_name" required>
+
+            <label for="last_name">Apellido:</label>
+            <input type="text" id="last_name" name="last_name" required>
+
+            <label for="id_card">Número de documento de identidad:</label>
+            <input type="text" id="id_card" name="id_card" required>
+
+            <label for="id_card_front">Foto del documento (frente):</label>
+            <input type="file" id="id_card_front" name="id_card_front" accept="image/*" required>
+
+            <label for="id_card_back">Foto del documento (reverso):</label>
+            <input type="file" id="id_card_back" name="id_card_back" accept="image/*" required>
+
+            <button type="submit" class="button">Enviar para Verificación</button>
+        </form>
+    </main>
+    <div id="custom-alert" class="modal">
+        <div class="modal-content">
+            <p id="custom-alert-message"></p>
+            <button onclick="closeCustomAlert()">Aceptar</button>
+        </div>
+    </div>
+</body>
+</html>
