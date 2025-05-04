@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const loadProducts = async () => {
-            let query = supabase.from('products').select('*').eq('approved', true);
+            let query = supabase.from('products').select('*');
 
             const searchTerm = searchBar ? searchBar.value.toLowerCase() : '';
             const maxPrice = maxPriceInput ? parseFloat(maxPriceInput.value) : Infinity;
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            console.log('Productos recibidos de Supabase:', products); // Mensaje de depuración
+            console.log('Productos recibidos de Supabase:', products);
 
             if (products.length === 0) {
                 productsList.innerHTML = '<p>No hay productos disponibles.</p>';
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const description = document.getElementById('description').value;
                 const category = document.getElementById('category').value;
                 const pricePerDay = parseFloat(document.getElementById('price_per_day').value);
-                const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElementById('sale_price').value) : null;
+                const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElement of='sale_price').value) : null;
                 const rentalType = document.querySelector('input[name="rental_type"]:checked').value;
                 const images = document.getElementById('images').files;
                 const location = document.getElementById('location').value;
@@ -359,8 +359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             sale_price: salePrice,
                             rental_type: rentalType,
                             photos: photoUrls,
-                            location: location,
-                            approved: false
+                            location: location
                         }
                     ]);
 
