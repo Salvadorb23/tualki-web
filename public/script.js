@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             usernameElement.setAttribute('href', 'login.html');
         } else {
             user = userData;
-            // Asegurar que verified tenga un valor por defecto si es null
             if (user.verified === null) {
                 const { error: updateError } = await supabase
                     .from('users')
@@ -43,7 +42,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await supabase.auth.signOut();
                 window.location.href = 'login.html';
             });
-            // Mostrar el enlace de verificación si no está verificado
             if (verifyLink) {
                 if (user.verified) {
                     verifyLink.style.display = 'none';
@@ -75,7 +73,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error al verificar usuario:', error?.message || 'Usuario no encontrado');
             return false;
         }
-        // Asegurar que verified tenga un valor por defecto si es null
         if (userData.verified === null) {
             const { error: updateError } = await supabase
                 .from('users')
@@ -433,12 +430,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sellerRating = document.getElementById('seller-rating');
         const sendMessageForm = document.getElementById('send-message-form');
 
-        if (actionTitle && productName && productDescription && productPrice && carouselInner && sellerName && sellerReviews && sellerRating) {
+        if (actionTitle && productName && productDescription && productPrice && carouselInner && sellerName && sellerReviews && sellerRating && sendMessageForm) {
             productName.textContent = name || 'Producto desconocido';
             productDescription.textContent = description || 'Sin descripción';
             let displayPrice = action === 'rent' ? pricePerDay : salePrice;
             actionTitle.textContent = action === 'rent' ? 'Alquilar Producto' : 'Comprar Producto';
-            productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+            productPrice.textContent = displayPrice ? displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' }) : 'No disponible';
 
             const { data: product, error: productError } = await supabase
                 .from('products')
@@ -448,10 +445,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (productError) {
                 console.error('Error al cargar fotos del producto:', productError.message);
                 alert('Error al cargar fotos del producto: ' + productError.message);
-                return;
+            } else {
+                const photos = product.photos || [null];
+                carouselInner.innerHTML = photos.map(photo => `<img src="${photo || 'https://via.placeholder.com/600x300?text=Sin+Imagen'}" alt="${name}" class="carousel-item">`).join('');
             }
-            const photos = product.photos || [null];
-            carouselInner.innerHTML = photos.map(photo => `<img src="${photo || 'https://via.placeholder.com/600x300?text=Sin+Imagen'}" alt="${name}" class="carousel-item">`).join('');
 
             const { data: seller, error: sellerError } = await supabase
                 .from('users')
@@ -461,11 +458,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (sellerError) {
                 console.error('Error al cargar datos del vendedor:', sellerError.message);
                 alert('Error al cargar datos del vendedor: ' + sellerError.message);
-                return;
+            } else {
+                sellerName.textContent = `${seller.first_name} ${seller.last_name}`;
+                sellerReviews.textContent = seller.reviews || 'Sin reseñas';
+                sellerRating.textContent = (seller.rating || 0).toFixed(1);
             }
-            sellerName.textContent = `${seller.first_name} ${seller.last_name}`;
-            sellerReviews.textContent = seller.reviews || 'Sin reseñas';
-            sellerRating.textContent = (seller.rating || 0).toFixed(1);
 
             if (!session?.session) {
                 alert('Por favor, inicia sesión para realizar esta acción.');
@@ -477,9 +474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.href = 'index.html';
                 return;
             }
-        }
 
-        if (sendMessageForm) {
             sendMessageForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const messageContent = document.getElementById('message-content').value;
@@ -556,12 +551,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 wompiCheckout.open(async function (result) {
                     if (result && result.status === 'APPROVED') {
                         alert('¡Pago exitoso!');
-                        const { data: session } = await supabase.auth.getSession();
-                        if (session.session) {
+                        const { data: sessionData } = await supabase.auth.getSession();
+                        if (sessionData.session) {
                             const { error } = await supabase
                                 .from('transactions')
                                 .insert({
-                                    buyer_id: session.session.user.id,
+                                    buyer_id: sessionData.session.user.id,
                                     seller_id: sellerId,
                                     product_id: productId,
                                     amount: amount,
@@ -575,9 +570,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             if (error) {
                                 console.error('Error al guardar transacción:', error.message);
                                 alert('Pago exitoso, pero hubo un error al registrar: ' + error.message);
-                            } else {
-                                window.location.href = 'https://tualki-web.vercel.app/index.html';
                             }
+                            window.location.href = 'https://tualki-web.vercel.app/index.html';
                         }
                     } else {
                         const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
@@ -636,6 +630,74 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     }
+
+    if (window.location.pathname.includes('messages.html')) {
+        const messagesList = document.getElementById('messages-list');
+        const sendMessageForm = document.getElementById('send-message-form');
+
+        if (messagesList && session?.session) {
+            const loadMessages = async () => {
+                const { data, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('receiver_id', session.session.user.id)
+                    .or('sender_id.eq.' + session.session.user.id);
+                if (error) {
+                    console.error('Error al cargar mensajes:', error.message);
+                    messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
+                } else {
+                    messagesList.innerHTML = data.map(msg => `
+                        <div class="message">
+                            <p><strong>${msg.sender_id === session.session.user.id ? 'Tú' : 'Vendedor'}</strong>: ${msg.content}</p>
+                            <small>${new Date(msg.created_at).toLocaleString()}</small>
+                        </div>
+                    `).join('');
+                }
+            };
+            await loadMessages();
+        }
+
+        if (sendMessageForm) {
+            sendMessageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const receiverEmail = document.getElementById('receiver-email').value;
+                const messageContent = document.getElementById('message-content').value;
+
+                if (!receiverEmail || !messageContent) {
+                    alert('Por favor, completa todos los campos.');
+                    return;
+                }
+
+                const { data: receiver, error: receiverError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', receiverEmail)
+                    .single();
+                if (receiverError || !receiver) {
+                    alert('No se encontró un usuario con ese correo.');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('messages')
+                    .insert({
+                        sender_id: session.session.user.id,
+                        receiver_id: receiver.id,
+                        content: messageContent,
+                        created_at: new Date().toISOString()
+                    });
+                if (error) {
+                    console.error('Error al enviar mensaje:', error.message);
+                    alert('Error al enviar mensaje: ' + error.message);
+                } else {
+                    alert('Mensaje enviado con éxito.');
+                    document.getElementById('receiver-email').value = '';
+                    document.getElementById('message-content').value = '';
+                    if (messagesList) await loadMessages();
+                }
+            });
+        }
+    }
 });
 
 function showCustomAlert(message) {
@@ -658,16 +720,14 @@ window.alert = showCustomAlert;
 
 function moveCarousel(button, direction) {
     if (typeof button === 'number') {
-        // Handle the case where direction is passed directly (from pay.html)
         const inner = document.getElementById('carousel-inner');
         let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
         const items = inner.querySelectorAll('.carousel-item').length;
-        currentTranslate += button * 100; // button is the direction in this case
+        currentTranslate += button * 100;
         if (currentTranslate > 0) currentTranslate = 0;
         if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
         inner.style.transform = `translateX(${currentTranslate}%)`;
     } else {
-        // Existing logic for index.html
         const carousel = button.parentElement;
         const inner = carousel.querySelector('.carousel-inner');
         let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
