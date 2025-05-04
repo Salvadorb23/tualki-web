@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://checkout.wompi.co/widget.js"></script>
     <style>
-        /* Estilos existentes (copiados de tu captura y ajustados) */
         * {
             margin: 0;
             padding: 0;
@@ -89,6 +88,10 @@
         }
 
         .user-profile:hover .dropdown {
+            display: block;
+        }
+
+        .dropdown.active {
             display: block;
         }
 
@@ -485,6 +488,25 @@
         </div>
     </div>
 
+    <script>
+        function showCustomAlert(message) {
+            const modal = document.getElementById('custom-alert');
+            const messageElement = document.getElementById('custom-alert-message');
+            if (modal && messageElement) {
+                messageElement.textContent = message;
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeCustomAlert() {
+            const modal = document.getElementById('custom-alert');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        window.alert = showCustomAlert;
+    </script>
     <script src="script.js" defer></script>
 </body>
 </html>
