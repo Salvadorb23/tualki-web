@@ -11,13 +11,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
 
     const usernameElement = document.getElementById('username');
+    const loginLink = document.getElementById('login-link');
+    const signupLink = document.getElementById('signup-link');
     const verifyLink = document.getElementById('verify-link');
     let user = null;
     const { data: session } = await supabase.auth.getSession();
+
     if (session?.session && usernameElement) {
         const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('email, verified, first_name, last_name, id_card_front, id_card_back, location')
+            .select('email, verified, first_name, last_name')
             .eq('id', session.session.user.id)
             .single();
         
@@ -25,6 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error al obtener datos del usuario:', userError?.message || 'Usuario no encontrado');
             usernameElement.textContent = 'Iniciar Sesión';
             usernameElement.setAttribute('href', 'login.html');
+            if (loginLink) loginLink.style.display = 'inline';
+            if (signupLink) signupLink.style.display = 'inline';
+            if (verifyLink) verifyLink.style.display = 'none';
         } else {
             user = userData;
             if (user.verified === null) {
@@ -38,24 +44,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 user.verified = false;
             }
             usernameElement.textContent = `${user.first_name} ${user.last_name}`;
+            usernameElement.removeAttribute('href');
             document.getElementById('logout').addEventListener('click', async () => {
                 await supabase.auth.signOut();
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
             });
             if (verifyLink) {
-                if (user.verified) {
-                    verifyLink.style.display = 'none';
-                } else {
-                    verifyLink.style.display = 'inline';
-                }
+                verifyLink.style.display = user.verified ? 'none' : 'inline';
             }
+            if (loginLink) loginLink.style.display = 'none';
+            if (signupLink) signupLink.style.display = 'none';
         }
     } else if (usernameElement) {
         usernameElement.textContent = 'Iniciar Sesión';
         usernameElement.setAttribute('href', 'login.html');
-        if (verifyLink) {
-            verifyLink.style.display = 'none';
-        }
+        if (loginLink) loginLink.style.display = 'inline';
+        if (signupLink) signupLink.style.display = 'inline';
+        if (verifyLink) verifyLink.style.display = 'none';
     }
 
     if ((window.location.pathname.includes('login.html') || window.location.pathname.includes('signup.html')) && session?.session) {
@@ -191,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                             ${photos.length > 1 ? '<button class="carousel-prev" onclick="moveCarousel(this, -1)">❮</button><button class="carousel-next" onclick="moveCarousel(this, 1)">❯</button>' : ''}
                         </div>
-                        <button class="favorite-button ${isFavorite ? 'favorited' : ''}" data-product-id="${product.id}">
+                        <button class="favorite-button ${isFavorited ? 'favorited' : ''}" data-product-id="${product.id}">
                             <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                         </button>
                         <div class="details">
@@ -245,15 +250,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const password = document.getElementById('password').value;
                 const firstName = document.getElementById('first_name').value;
                 const lastName = document.getElementById('last_name').value;
-                const idCard = document.getElementById('id_card').value;
-                const idCardFront = document.getElementById('id_card_front').files[0];
-                const idCardBack = document.getElementById('id_card_back').files[0];
-                const location = document.getElementById('location').value;
 
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
-                    options: { data: { first_name: firstName, last_name: lastName, id_card: idCard, location } }
+                    options: { data: { first_name: firstName, last_name: lastName } }
                 });
 
                 if (error) {
@@ -262,31 +263,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                let frontUrl = null, backUrl = null;
-                if (idCardFront) {
-                    const { data: frontData, error: frontError } = await supabase.storage
-                        .from('user-documents')
-                        .upload(`${data.user.id}_id_front_${Date.now()}.jpg`, idCardFront);
-                    if (!frontError) frontUrl = supabase.storage.from('user-documents').getPublicUrl(frontData.path).data.publicUrl;
-                }
-                if (idCardBack) {
-                    const { data: backData, error: backError } = await supabase.storage
-                        .from('user-documents')
-                        .upload(`${data.user.id}_id_back_${Date.now()}.jpg`, idCardBack);
-                    if (!backError) backUrl = supabase.storage.from('user-documents').getPublicUrl(backData.path).data.publicUrl;
-                }
-
                 const { error: updateError } = await supabase
                     .from('users')
-                    .update({ verified: false, id_card_front: frontUrl, id_card_back: backUrl, location: location })
+                    .update({ verified: false })
                     .eq('id', data.user.id);
                 if (updateError) {
                     console.error('Error al actualizar usuario:', updateError.message);
-                    showCustomAlert('Error al guardar documentos: ' + updateError.message);
+                    showCustomAlert('Error al guardar datos: ' + updateError.message);
                     return;
                 }
 
-                showCustomAlert('¡Registro exitoso! Puedes verificar tu cuenta cuando desees desde tu perfil.');
+                showCustomAlert('¡Registro exitoso! Verifica tu correo para activar tu cuenta. Luego, completa tu verificación de perfil.');
                 window.location.href = 'index.html';
             });
         }
@@ -427,9 +414,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sellerReviews = document.getElementById('seller-reviews');
         const sellerRating = document.getElementById('seller-rating');
         const sendMessageForm = document.getElementById('send-message-form');
-        const cancelButton = document.createElement('button'); // Botón para cancelar
+        const cancelButton = document.createElement('button');
 
-        // Agස: Agregar botón de cancelar en pay.html
         if (sendMessageForm) {
             cancelButton.textContent = 'Cancelar';
             cancelButton.className = 'secondary-button';
@@ -474,12 +460,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sellerRating.textContent = (seller.rating || 0).toFixed(1);
             }
 
-            // Mostrar el botón de pago inicialmente como oculto
             if (payButton) {
                 payButton.style.display = 'none';
             }
 
-            // Validar sesión y verificación solo al intentar enviar mensaje o pagar
             sendMessageForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
@@ -488,7 +472,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.location.href = 'login.html';
                     return;
                 }
-
                 if (!(await checkVerification())) {
                     showCustomAlert('Para alquilar o comprar, primero debes verificar tu perfil.');
                     window.location.href = 'verify.html';
@@ -558,7 +541,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const data = encoder.encode(stringToSign);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const signature = hashArray.map(b => b.toString(16).padStart( banc2, '0')).join('');
+                const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
                 const wompiCheckout = new WidgetCheckout({
                     currency: 'COP',
@@ -754,8 +737,4 @@ function moveCarousel(button, direction) {
         let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
         const items = carousel.querySelectorAll('.carousel-item').length;
         currentTranslate += direction * 100;
-        if (currentTranslate > 0) currentTranslate = 0;
-        if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
-        inner.style.transform = `translateX(${currentTranslate}%)`;
-    }
-}
+        if (
