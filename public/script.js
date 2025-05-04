@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const description = document.getElementById('description').value;
                 const category = document.getElementById('category').value;
                 const pricePerDay = parseFloat(document.getElementById('price_per_day').value);
-                const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElement of='sale_price').value) : null;
+                const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElementById('sale_price').value) : null;
                 const rentalType = document.querySelector('input[name="rental_type"]:checked').value;
                 const images = document.getElementById('images').files;
                 const location = document.getElementById('location').value;
