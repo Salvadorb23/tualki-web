@@ -17,87 +17,70 @@
         body {
             background-color: #f5f5f5;
             font-size: 16px;
-            line-height: 1.6;
         }
 
         header {
             background-color: #007bff;
-            padding: 15px 30px;
+            padding: 10px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: relative;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .logo img {
-            height: 60px;
-            transition: transform 0.3s;
-        }
-
-        .logo img:hover {
-            transform: scale(1.1);
+            height: 40px;
         }
 
         nav {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
 
         nav a {
             color: white;
             text-decoration: none;
-            padding: 10px 20px;
+            padding: 8px 15px;
             border-radius: 5px;
-            transition: background-color 0.3s, color 0.3s;
-            font-size: 16px;
+            transition: background-color 0.3s;
         }
 
         nav a:hover {
             background-color: #0056b3;
-            color: #fff;
         }
 
         .user-profile {
             position: relative;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
             cursor: pointer;
             color: white;
         }
 
         .user-profile img {
-            height: 35px;
+            height: 30px;
             border-radius: 50%;
-            transition: transform 0.3s;
-        }
-
-        .user-profile img:hover {
-            transform: scale(1.1);
         }
 
         .dropdown {
             display: none;
             position: absolute;
-            top: 50px;
+            top: 40px;
             right: 0;
             background-color: #ff6200;
             border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             z-index: 1000;
-            min-width: 180px;
-            padding: 5px 0;
+            min-width: 150px;
         }
 
         .dropdown a {
             display: block;
-            padding: 12px 20px;
+            padding: 10px 15px;
             color: white;
             text-decoration: none;
-            font-size: 14px;
-            transition: background-color 0.3s;
         }
 
         .dropdown a:hover {
@@ -108,19 +91,18 @@
             display: block;
         }
 
+        .dropdown.active {
+            display: block;
+        }
+
         .notification {
             position: relative;
-            margin-right: 15px;
+            margin-right: 10px;
         }
 
         .notification img {
-            height: 28px;
+            height: 24px;
             cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .notification img:hover {
-            transform: scale(1.1);
         }
 
         .notification .badge {
@@ -132,7 +114,6 @@
             border-radius: 50%;
             padding: 2px 6px;
             font-size: 12px;
-            font-weight: bold;
         }
 
         .country-select {
@@ -140,14 +121,9 @@
         }
 
         .country-select img {
-            height: 28px;
+            height: 24px;
             border-radius: 3px;
             cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .country-select img:hover {
-            transform: scale(1.1);
         }
 
         .country-dropdown {
@@ -158,20 +134,16 @@
             background-color: white;
             border: 1px solid #ccc;
             border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             z-index: 1000;
-            min-width: 120px;
+            min-width: 100px;
         }
 
         .country-dropdown a {
             display: block;
-            padding: 8px 15px;
+            padding: 5px 10px;
             color: #333;
             text-decoration: none;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .country-dropdown a:hover {
@@ -184,228 +156,162 @@
 
         .categories-bar {
             background-color: #d3d3d3;
-            padding: 15px 30px;
+            padding: 10px 20px;
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
             justify-content: center;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .categories-bar a {
             color: #333;
             text-decoration: none;
-            padding: 8px 15px;
+            padding: 5px 10px;
             background-color: #fff;
-            border-radius: 20px;
+            border-radius: 15px;
             border: 1px solid #ccc;
             transition: all 0.3s;
-            font-size: 14px;
-            white-space: nowrap;
+            cursor: pointer;
         }
 
         .categories-bar a:hover, .categories-bar a.active {
             background-color: #007bff;
             color: white;
             border-color: #0056b3;
-            transform: translateY(-2px);
         }
 
         .ad-bar {
             background-color: #d3d3d3;
             color: #333;
             text-align: center;
-            padding: 15px;
+            padding: 10px;
             font-size: 14px;
-            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+            height: 50px;
         }
 
         .container {
             max-width: 1200px;
-            margin: 30px auto;
+            margin: 20px auto;
             padding: 0 20px;
         }
 
         h1 {
-            font-size: 28px;
-            margin-bottom: 15px;
+            font-size: 24px;
+            margin-bottom: 10px;
             color: #ff6200;
             text-align: center;
-            font-weight: 600;
         }
 
         p {
             color: #666;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             text-align: center;
-            font-size: 16px;
         }
 
         .search-filter {
             display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 10px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
             justify-content: center;
         }
 
         .search-filter input {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 25px;
-            font-size: 16px;
-            flex: 1;
-            min-width: 250px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .search-filter input:focus {
-            border-color: #007bff;
-        }
-
-        .filters {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-            justify-content: center;
-        }
-
-        .filters input {
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 20px;
             font-size: 14px;
-            min-width: 180px;
-            outline: none;
-            transition: border-color 0.3s;
+            flex: 1;
+            min-width: 200px;
         }
 
-        .filters input:focus {
-            border-color: #007bff;
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .filters input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 15px;
+            font-size: 14px;
+            min-width: 150px;
         }
 
         #products-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 25px;
-            padding: 20px 0;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         .product {
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             position: relative;
-            transition: transform 0.3s;
         }
 
-        .product:hover {
-            transform: translateY(-5px);
-        }
-
-        .carousel {
-            position: relative;
+        .product-image {
             width: 100%;
-            height: 220px;
-            overflow: hidden;
-        }
-
-        .carousel-inner {
-            display: flex;
-            transition: transform 0.5s ease;
-            height: 100%;
-        }
-
-        .carousel-item {
-            min-width: 100%;
-            height: 100%;
+            height: 200px;
             object-fit: cover;
-        }
-
-        .carousel-prev, .carousel-next {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        .carousel-prev {
-            left: 10px;
-        }
-
-        .carousel-next {
-            right: 10px;
         }
 
         .favorite-button {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(255, 255, 255, 0.9);
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
             border: none;
             border-radius: 50%;
-            padding: 10px;
+            padding: 8px;
             cursor: pointer;
-            z-index: 10;
-            transition: background 0.3s, transform 0.3s;
+            transition: background 0.3s;
         }
 
         .favorite-button:hover {
             background: rgba(255, 255, 255, 1);
-            transform: scale(1.1);
         }
 
         .favorite-button svg {
-            width: 22px;
-            height: 22px;
-            fill: #999;
-            transition: fill 0.3s;
+            width: 20px;
+            height: 20px;
+            fill: #999; /* Gris por defecto */
         }
 
         .favorite-button.favorited svg {
-            fill: #ff6200;
+            fill: #ff6200; /* Naranja de Tualki cuando está marcado como favorito */
         }
 
         .details {
-            padding: 20px;
+            padding: 15px;
         }
 
         .details h3 {
-            font-size: 20px;
+            font-size: 18px;
             margin-bottom: 10px;
-            color: #333;
-            font-weight: 500;
         }
 
         .details p {
-            color: #555;
+            color: #333;
             margin-bottom: 10px;
-            font-size: 14px;
         }
 
         .rental-price, .sale-price {
             font-weight: bold;
-            color: #007bff;
-            margin-bottom: 5px;
         }
 
         .button, .secondary-button {
             display: inline-block;
-            padding: 12px 20px;
+            padding: 10px 15px;
             border-radius: 5px;
             text-decoration: none;
             text-align: center;
             margin-top: 10px;
-            font-size: 14px;
-            transition: background-color 0.3s;
         }
 
         .button {
@@ -442,17 +348,17 @@
 
         .modal-content {
             background-color: #e6f0ff;
-            padding: 25px;
+            padding: 20px;
             border-radius: 10px;
             text-align: center;
-            max-width: 450px;
+            max-width: 400px;
             width: 90%;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .modal-content img {
-            height: 60px;
-            margin-bottom: 20px;
+            height: 50px;
+            margin-bottom: 15px;
         }
 
         .modal-content p {
@@ -465,11 +371,10 @@
             background-color: #007bff;
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
-            transition: background-color 0.3s;
         }
 
         .modal-content button:hover {
@@ -478,48 +383,27 @@
 
         @media (max-width: 768px) {
             header {
-                flex-direction: column;
-                padding: 15px;
-                gap: 15px;
-            }
-
-            .logo img {
-                height: 50px;
+                flex-wrap: wrap;
+                gap: 10px;
             }
 
             nav {
-                flex-direction: column;
+                flex-wrap: wrap;
+                justify-content: center;
                 gap: 10px;
-                width: 100%;
-            }
-
-            nav a {
-                padding: 8px 15px;
-                width: 100%;
-                text-align: center;
             }
 
             .user-profile, .notification, .country-select {
-                margin: 0;
+                margin: 0 5px;
             }
 
             .dropdown, .country-dropdown {
-                top: 40px;
-                right: 0;
-                left: 0;
-                margin: 0 auto;
-                width: 90%;
-                max-width: 200px;
+                top: 50px;
             }
 
             .categories-bar {
-                padding: 10px 15px;
-                gap: 10px;
-            }
-
-            .categories-bar a {
-                padding: 6px 12px;
-                font-size: 12px;
+                flex-direction: row;
+                justify-content: center;
             }
 
             .search-filter, .filters {
@@ -529,30 +413,6 @@
 
             .search-filter input, .filters input {
                 width: 100%;
-                margin-bottom: 10px;
-            }
-
-            #products-list {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .product {
-                width: 100%;
-            }
-
-            .carousel, .product-image {
-                height: 180px;
-            }
-        }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-            #products-list {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            }
-
-            .carousel, .product-image {
-                height: 200px;
             }
         }
     </style>
@@ -601,14 +461,7 @@
     </div>
 
     <div class="ad-bar">
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="ca-pub-9146059688937409"
-             data-ad-slot="TU_ID_DE_ANUNCIO"
-             data-ad-format="auto"></ins>
-        <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9146059688937409" crossorigin="anonymous"></script>
     </div>
 
     <div class="container">
@@ -622,7 +475,6 @@
         <div class="filters">
             <input type="number" id="max-price" placeholder="Precio máximo (COP)">
             <input type="text" id="location-filter" placeholder="Ubicación">
-            <input type="number" id="radius-filter" placeholder="Radio (km)" min="1" max="50">
         </div>
 
         <div id="products-list"></div>
@@ -636,6 +488,26 @@
         </div>
     </div>
 
+    <script>
+        function showCustomAlert(message) {
+            const modal = document.getElementById('custom-alert');
+            const messageElement = document.getElementById('custom-alert-message');
+            if (modal && messageElement) {
+                messageElement.textContent = message;
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeCustomAlert() {
+            const modal = document.getElementById('custom-alert');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        window.alert = showCustomAlert;
+    </script>
     <script src="script.js" defer></script>
 </body>
 </html>
+
