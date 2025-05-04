@@ -125,7 +125,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const loadProducts = async () => {
-            let query = supabase.from('products').select('*').eq('approved', true);
+            // Eliminamos el filtro .eq('approved', true) porque la columna no existe
+            let query = supabase.from('products').select('*');
 
             const searchTerm = searchBar ? searchBar.value.toLowerCase() : '';
             const maxPrice = maxPriceInput ? parseFloat(maxPriceInput.value) : Infinity;
@@ -359,8 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             sale_price: salePrice,
                             rental_type: rentalType,
                             photos: photoUrls,
-                            location: location,
-                            approved: false
+                            location: location
                         }
                     ]);
 
