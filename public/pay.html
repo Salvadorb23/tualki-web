@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Publicar Producto - Tualki</title>
+    <title>Tualki - Pagar</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://checkout.wompi.co/widget.js"></script>
     <style>
         * {
             margin: 0;
@@ -195,18 +196,61 @@
             font-weight: 600;
         }
 
+        p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .carousel {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .carousel-inner {
+            display: flex;
+            transition: transform 0.5s ease;
+            height: 100%;
+        }
+
+        .carousel-item {
+            min-width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .carousel-prev, .carousel-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .carousel-prev {
+            left: 10px;
+        }
+
+        .carousel-next {
+            right: 10px;
+        }
+
         form {
             background-color: white;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-group {
             margin-bottom: 20px;
         }
 
-        .form-group label {
+        form label {
             display: block;
             margin-bottom: 8px;
             color: #333;
@@ -214,9 +258,7 @@
             font-weight: 500;
         }
 
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
+        form textarea {
             width: 100%;
             padding: 12px;
             border: 1px solid #ccc;
@@ -224,34 +266,15 @@
             font-size: 14px;
             outline: none;
             transition: border-color 0.3s;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            border-color: #007bff;
-        }
-
-        .form-group textarea {
             resize: vertical;
             min-height: 100px;
         }
 
-        .form-group input[type="file"] {
-            padding: 8px 0;
+        form textarea:focus {
+            border-color: #007bff;
         }
 
-        .rental-type {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-        }
-
-        .rental-type label {
-            margin: 0;
-        }
-
-        button[type="submit"] {
+        form button {
             background-color: #007bff;
             color: white;
             border: none;
@@ -264,7 +287,23 @@
             transition: background-color 0.3s;
         }
 
-        button[type="submit"]:hover {
+        form button:hover {
+            background-color: #0056b3;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
             background-color: #0056b3;
         }
 
@@ -317,26 +356,8 @@
                 font-size: 24px;
             }
 
-            .form-group label {
-                font-size: 14px;
-            }
-
-            .form-group input,
-            .form-group textarea,
-            .form-group select {
-                padding: 10px;
-                font-size: 13px;
-            }
-
-            button[type="submit"] {
-                padding: 10px 20px;
-                font-size: 14px;
-            }
-        }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .container {
-                max-width: 700px;
+            .carousel {
+                height: 200px;
             }
         }
     </style>
@@ -344,7 +365,7 @@
 <body>
     <header>
         <div class="logo">
-            <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//Logo%20tualki%20para%20web.png" alt="Tualki Logo">
+            <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images/Logo%20tualki%20para%20web.png" alt="Tualki Logo">
         </div>
         <nav>
             <a href="index.html">Inicio</a>
@@ -352,7 +373,7 @@
             <a href="deliveries.html">Mis pedidos</a>
             <div class="user-profile">
                 <span id="username">Nombre de usuario</span>
-                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//perfil.png" alt="Perfil">
+                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images/perfil.png" alt="Perfil">
                 <div class="dropdown" id="profile-dropdown">
                     <a href="index.html">Inicio</a>
                     <a href="publish.html">Publicar</a>
@@ -362,64 +383,37 @@
                 </div>
             </div>
             <a href="messages.html" class="notification">
-                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//notificaciones.png" alt="Notificaciones">
+                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images/notificaciones.png" alt="Notificaciones">
                 <span class="badge">2</span>
             </a>
             <div class="country-select">
-                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//bandera%20de%20colombia.png" alt="Bandera de Colombia" id="country-flag">
+                <img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images/bandera%20de%20colombia.png" alt="Bandera de Colombia" id="country-flag">
                 <div class="country-dropdown" id="country-dropdown">
-                    <a href="#" data-country="co"><img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images//bandera%20de%20colombia.png" alt="Colombia"> Colombia</a>
+                    <a href="#" data-country="co"><img src="https://vrvwmlromomnynckppqz.supabase.co/storage/v1/object/public/tualki-images/bandera%20de%20colombia.png" alt="Colombia"> Colombia</a>
                 </div>
             </div>
         </nav>
     </header>
 
     <div class="container">
-        <h1>Publicar un Producto</h1>
-        <form id="publish-form">
-            <div class="form-group">
-                <label for="name">Nombre del Producto</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            <div class="form-group">
-                <label for="description">Descripción</label>
-                <textarea id="description" name="description" required></textarea>
-            </div>
-            <div class="form-group">
-                <label for="category">Categoría</label>
-                <select id="category" name="category" required>
-                    <option value="Electrónica">Electrónica</option>
-                    <option value="Eventos">Eventos</option>
-                    <option value="Hogar">Hogar</option>
-                    <option value="Otros">Otros</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Tipo de Oferta</label>
-                <div class="rental-type">
-                    <label><input type="radio" name="rental_type" value="rent" required> Solo Alquiler</label>
-                    <label><input type="radio" name="rental_type" value="rent_sell"> Alquiler y Venta</label>
-                    <label><input type="radio" name="rental_type" value="sell"> Solo Venta</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="price_per_day">Precio por Día (COP, si aplica)</label>
-                <input type="number" id="price_per_day" name="price_per_day" required>
-            </div>
-            <div class="form-group">
-                <label for="sale_price">Precio de Venta (COP, si aplica)</label>
-                <input type="number" id="sale_price" name="sale_price">
-            </div>
-            <div class="form-group">
-                <label for="images">Imágenes (máximo 5)</label>
-                <input type="file" id="images" name="images" accept="image/*" multiple required>
-            </div>
-            <div class="form-group">
-                <label for="location">Ubicación (ej. Calle 123 #45-67, Bogotá)</label>
-                <input type="text" id="location" name="location" required>
-            </div>
-            <button type="submit">Publicar Producto</button>
+        <h1 id="action-title">Procesar Pago</h1>
+        <p>Producto: <span id="product-name"></span></p>
+        <p>Descripción: <span id="product-description"></span></p>
+        <p>Precio: <span id="product-price"></span></p>
+        <p>Vendedor: <span id="seller-name"></span></p>
+        <p>Reseñas: <span id="seller-reviews"></span></p>
+        <p>Calificación: <span id="seller-rating"></span></p>
+        <div class="carousel">
+            <div class="carousel-inner" id="carousel-inner"></div>
+            <button class="carousel-prev" onclick="moveCarousel(-1)">❮</button>
+            <button class="carousel-next" onclick="moveCarousel(1)">❯</button>
+        </div>
+        <form id="send-message-form">
+            <label for="message-content">Mensaje al vendedor</label>
+            <textarea id="message-content" required placeholder="Escribe tu mensaje al vendedor"></textarea>
+            <button type="submit">Enviar Mensaje y Continuar</button>
         </form>
+        <button id="pay-button" class="button" style="display: none;">Pagar con Wompi</button>
     </div>
 
     <script src="script.js" defer></script>
