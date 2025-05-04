@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
 
     const usernameElement = document.getElementById('username');
+    const verifyLink = document.getElementById('verify-link');
     let user = null;
     const { data: session } = await supabase.auth.getSession();
     if (session?.session && usernameElement) {
@@ -26,25 +27,67 @@ document.addEventListener('DOMContentLoaded', async () => {
             usernameElement.setAttribute('href', 'login.html');
         } else {
             user = userData;
-            if (!user.verified) {
-                alert('Por favor, completa la verificación de tu cuenta para continuar.');
-                window.location.href = 'verify.html';
-                return;
+            // Asegurar que verified tenga un valor por defecto si es null
+            if (user.verified === null) {
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({ verified: false })
+                    .eq('id', session.session.user.id);
+                if (updateError) {
+                    console.error('Error al establecer verified por defecto:', updateError.message);
+                }
+                user.verified = false;
             }
             usernameElement.textContent = `${user.first_name} ${user.last_name}`;
             document.getElementById('logout').addEventListener('click', async () => {
                 await supabase.auth.signOut();
                 window.location.href = 'login.html';
             });
+            // Mostrar el enlace de verificación si no está verificado
+            if (verifyLink) {
+                if (user.verified) {
+                    verifyLink.style.display = 'none';
+                } else {
+                    verifyLink.style.display = 'inline';
+                }
+            }
         }
     } else if (usernameElement) {
         usernameElement.textContent = 'Iniciar Sesión';
         usernameElement.setAttribute('href', 'login.html');
+        if (verifyLink) {
+            verifyLink.style.display = 'none';
+        }
     }
 
     if ((window.location.pathname.includes('login.html') || window.location.pathname.includes('signup.html')) && session?.session) {
         window.location.href = 'index.html';
     }
+
+    const checkVerification = async () => {
+        if (!session?.session) return false;
+        const { data: userData, error } = await supabase
+            .from('users')
+            .select('verified')
+            .eq('id', session.session.user.id)
+            .single();
+        if (error || !userData) {
+            console.error('Error al verificar usuario:', error?.message || 'Usuario no encontrado');
+            return false;
+        }
+        // Asegurar que verified tenga un valor por defecto si es null
+        if (userData.verified === null) {
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ verified: false })
+                .eq('id', session.session.user.id);
+            if (updateError) {
+                console.error('Error al establecer verified por defecto:', updateError.message);
+            }
+            return false;
+        }
+        return userData.verified;
+    };
 
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
         const productsList = document.getElementById('products-list');
@@ -77,9 +120,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const toggleFavorite = async (productId, button) => {
-            if (!session?.session || !(await checkVerification())) {
-                alert('Por favor, verifica tu cuenta para gestionar favoritos.');
-                window.location.href = 'verify.html';
+            if (!session?.session) {
+                alert('Por favor, inicia sesión para gestionar favoritos.');
+                window.location.href = 'login.html';
+                return;
+            }
+            if (!(await checkVerification())) {
+                alert('Para gestionar favoritos debe verificar su perfil.');
                 return;
             }
             try {
@@ -108,20 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('Error al gestionar favorito:', error.message);
                 alert('Error: ' + error.message);
             }
-        };
-
-        const checkVerification = async () => {
-            if (!session?.session) return false;
-            const { data: userData, error } = await supabase
-                .from('users')
-                .select('verified')
-                .eq('id', session.session.user.id)
-                .single();
-            if (error || !userData) {
-                console.error('Error al verificar usuario:', error?.message || 'Usuario no encontrado');
-                return false;
-            }
-            return userData.verified;
         };
 
         const loadProducts = async () => {
@@ -258,8 +291,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                alert('¡Registro exitoso! Revisa tu correo para verificar tu cuenta y espera aprobación manual.');
-                window.location.href = 'login.html';
+                alert('¡Registro exitoso! Puedes verificar tu cuenta cuando desees desde tu perfil.');
+                window.location.href = 'index.html';
             });
         }
     }
@@ -294,11 +327,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await supabase.auth.signOut();
                     return;
                 }
-                if (!userData.verified) {
-                    alert('Tu cuenta aún no ha sido verificada. Espera aprobación manual.');
-                    await supabase.auth.signOut();
-                    return;
-                }
 
                 alert('¡Inicio de sesión exitoso!');
                 window.location.href = 'index.html';
@@ -311,20 +339,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (publishForm) {
             publishForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                if (!await checkVerification()) {
-                    alert('Por favor, verifica tu cuenta para publicar.');
-                    window.location.href = 'verify.html';
+                if (!session?.session) {
+                    alert('Por favor, inicia sesión para publicar.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                if (!(await checkVerification())) {
+                    alert('Para publicar debe verificar su perfil.');
                     return;
                 }
 
                 const name = document.getElementById('name').value;
                 const description = document.getElementById('description').value;
                 const category = document.getElementById('category').value;
-                const pricePerDay = parseFloat(document.getElementById('price_per_day').value);
+                const pricePerDay = document.getElementById('price_per_day').value ? parseFloat(document.getElementById('price_per_day').value) : null;
                 const salePrice = document.getElementById('sale_price').value ? parseFloat(document.getElementById('sale_price').value) : null;
                 const rentalType = document.querySelector('input[name="rental_type"]:checked').value;
                 const images = document.getElementById('images').files;
                 const location = document.getElementById('location').value;
+
+                if (!name || !category || !location || (rentalType !== 'sell' && !pricePerDay)) {
+                    alert('Por favor, completa todos los campos obligatorios (nombre, categoría, ubicación y precio por día si aplicable).');
+                    return;
+                }
 
                 const { data: userData, error: userError } = await supabase.auth.getSession();
                 if (userError || !userData.session) {
@@ -347,21 +384,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     photoUrls.push(urlData.publicUrl);
                 }
 
+                const productData = {
+                    user_id: userData.session.user.id,
+                    name,
+                    description,
+                    category,
+                    price_per_day: rentalType !== 'sell' ? pricePerDay : null,
+                    sale_price: rentalType === 'sell' || (rentalType === 'alquiler y venta' && salePrice) ? salePrice : null,
+                    rental_type: rentalType,
+                    photos: photoUrls.length > 0 ? photoUrls : null,
+                    location: location
+                };
+
                 const { data, error } = await supabase
                     .from('products')
-                    .insert([
-                        {
-                            user_id: userData.session.user.id,
-                            name,
-                            description,
-                            category,
-                            price_per_day: pricePerDay,
-                            sale_price: salePrice,
-                            rental_type: rentalType,
-                            photos: photoUrls,
-                            location: location
-                        }
-                    ]);
+                    .insert([productData]);
 
                 if (error) {
                     console.error('Error al publicar:', error.message);
@@ -429,18 +466,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             sellerReviews.textContent = seller.reviews || 'Sin reseñas';
             sellerRating.textContent = (seller.rating || 0).toFixed(1);
 
-            if (!await checkVerification()) {
-                alert('Por favor, verifica tu cuenta para realizar esta acción.');
-                window.location.href = 'verify.html';
+            if (!session?.session) {
+                alert('Por favor, inicia sesión para realizar esta acción.');
+                window.location.href = 'login.html';
+                return;
+            }
+            if (!(await checkVerification())) {
+                alert('Para alquilar debe verificar su perfil.');
+                window.location.href = 'index.html';
                 return;
             }
         }
 
         if (payButton) {
             payButton.addEventListener('click', async () => {
-                if (!await checkVerification()) {
-                    alert('Por favor, verifica tu cuenta para pagar.');
-                    window.location.href = 'verify.html';
+                if (!session?.session) {
+                    alert('Por favor, inicia sesión para pagar.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                if (!(await checkVerification())) {
+                    alert('Para alquilar debe verificar su perfil.');
                     return;
                 }
 
@@ -548,7 +594,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const { error } = await supabase
                     .from('users')
-                    .update({ first_name: firstName, last_name: lastName, id_card: idCard, id_card_front: frontUrl, id_card_back: backUrl })
+                    .update({ first_name: firstName, last_name: lastName, id_card: idCard, id_card_front: frontUrl, id_card_back: backUrl, verified: false })
                     .eq('id', session.session.user.id);
                 if (error) {
                     console.error('Error al verificar:', error.message);
