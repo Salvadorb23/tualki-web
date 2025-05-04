@@ -12,29 +12,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydndtbHJvbW9tbnluY2twcHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ2NjksImV4cCI6MjA2MTMxMDY2OX0.F1PJQG59heZWX2M9lHTQNRVr63Sijk-xVjOH5X8D7lE'
     );
 
-    // Actualizar enlaces de autenticación según el estado del usuario
-    const authLinks = document.querySelector('.auth-links');
+    // Actualizar estado del usuario
+    const usernameElement = document.getElementById('username');
     const { data: session } = await supabase.auth.getSession();
-    if (session.session) {
-        authLinks.innerHTML = `
-            <a href="#" id="logout">Cerrar Sesión</a>
-        `;
+    if (session.session && usernameElement) {
+        usernameElement.textContent = session.session.user.email.split('@')[0];
         document.getElementById('logout').addEventListener('click', async () => {
             await supabase.auth.signOut();
             window.location.href = 'login.html';
         });
-    } else {
-        authLinks.innerHTML = `
-            <a href="login.html">Iniciar Sesión</a>
-            <a href="signup.html">Registrarse</a>
-        `;
+    } else if (usernameElement) {
+        usernameElement.textContent = 'Iniciar Sesión';
+        usernameElement.setAttribute('href', 'login.html');
     }
 
     // Redirigir si el usuario ya está autenticado en login.html o signup.html
-    if (window.location.pathname.includes('login.html') || window.location.pathname.includes('signup.html')) {
-        if (session.session) {
-            window.location.href = 'index.html';
-        }
+    if ((window.location.pathname.includes('login.html') || window.location.pathname.includes('signup.html')) && session.session) {
+        window.location.href = 'index.html';
     }
 
     // Código para listar productos (index.html)
@@ -45,10 +39,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const locationInput = document.getElementById('location-filter');
         const categoryLinks = document.querySelectorAll('.categories-bar a');
 
+        if (!productsList) {
+            console.error('Elemento products-list no encontrado');
+            return;
+        }
+
         let currentFilter = 'all';
         let userFavorites = new Set();
 
         const loadFavorites = async () => {
+            if (!session.session) return;
             const { data: favorites, error } = await supabase
                 .from('favorites')
                 .select('product_id')
@@ -62,6 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const toggleFavorite = async (productId, button) => {
+            if (!session.session) {
+                alert('Por favor, inicia sesión para gestionar favoritos.');
+                window.location.href = 'login.html';
+                return;
+            }
             try {
                 const isFavorited = userFavorites.has(productId);
                 if (isFavorited) {
@@ -70,9 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         .delete()
                         .eq('user_id', session.session.user.id)
                         .eq('product_id', productId);
-                    if (error) {
-                        throw new Error('Error al quitar favorito: ' + error.message);
-                    }
+                    if (error) throw new Error('Error al quitar favorito: ' + error.message);
                     userFavorites.delete(productId);
                     button.classList.remove('favorited');
                     alert('Producto eliminado de favoritos.');
@@ -80,16 +83,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const { error } = await supabase
                         .from('favorites')
                         .insert({ user_id: session.session.user.id, product_id: productId });
-                    if (error) {
-                        throw new Error('Error al añadir favorito: ' + error.message);
-                    }
+                    if (error) throw new Error('Error al añadir favorito: ' + error.message);
                     userFavorites.add(productId);
                     button.classList.add('favorited');
                     alert('Producto añadido a favoritos.');
                 }
-                if (currentFilter === 'favorites') {
-                    loadProducts();
-                }
+                if (currentFilter === 'favorites') loadProducts();
             } catch (error) {
                 console.error(error.message);
                 alert(error.message);
@@ -99,26 +98,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loadProducts = async () => {
             let query = supabase.from('products').select('*');
 
-            const searchTerm = searchBar.value.toLowerCase();
-            const maxPrice = maxPriceInput.value ? parseFloat(maxPriceInput.value) : null;
-            const location = locationInput.value.toLowerCase();
+            const searchTerm = searchBar ? searchBar.value.toLowerCase() : '';
+            const maxPrice = maxPriceInput ? parseFloat(maxPriceInput.value) : null;
+            const location = locationInput ? locationInput.value.toLowerCase() : '';
 
-            if (searchTerm) {
-                query = query.ilike('name', `%${searchTerm}%`);
-            }
-            if (maxPrice) {
-                query = query.lte('price_per_day', maxPrice);
-            }
-            if (location) {
-                query = query.ilike('location', `%${location}%`);
-            }
-            if (currentFilter === 'favorites') {
-                query = query.in('id', Array.from(userFavorites));
-            } else if (currentFilter === 'recent') {
-                query = query.order('created_at', { ascending: false });
-            } else if (currentFilter !== 'all' && currentFilter !== 'more') {
-                query = query.eq('category', currentFilter);
-            }
+            if (searchTerm) query = query.ilike('name', `%${searchTerm}%`);
+            if (maxPrice) query = query.lte('price_per_day', maxPrice);
+            if (location) query = query.ilike('location', `%${location}%`);
+            if (currentFilter === 'favorites' && session.session) query = query.in('id', Array.from(userFavorites));
+            else if (currentFilter === 'recent') query = query.order('created_at', { ascending: false });
+            else if (currentFilter !== 'all' && currentFilter !== 'more') query = query.eq('category', currentFilter);
 
             const { data: products, error } = await query;
             console.log('Datos de productos:', products, 'Error:', error);
@@ -171,9 +160,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (productsList) {
             await loadFavorites();
             loadProducts();
-            searchBar.addEventListener('input', loadProducts);
-            maxPriceInput.addEventListener('input', loadProducts);
-            locationInput.addEventListener('input', loadProducts);
+            if (searchBar) searchBar.addEventListener('input', loadProducts);
+            if (maxPriceInput) maxPriceInput.addEventListener('input', loadProducts);
+            if (locationInput) locationInput.addEventListener('input', loadProducts);
 
             categoryLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
@@ -326,16 +315,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (error) {
                 console.error('Error al cargar mensajes:', error.message);
-                messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
+                if (messagesList) messagesList.innerHTML = '<p>Error al cargar los mensajes: ' + error.message + '</p>';
                 return;
             }
 
             if (data.length === 0) {
-                messagesList.innerHTML = '<p>No hay mensajes disponibles.</p>';
+                if (messagesList) messagesList.innerHTML = '<p>No hay mensajes disponibles.</p>';
                 return;
             }
 
-            messagesList.innerHTML = data.map(message => `
+            if (messagesList) messagesList.innerHTML = data.map(message => `
                 <div class="message">
                     <p><strong>De:</strong> ${message.sender_id}</p>
                     <p><strong>Para:</strong> ${message.receiver_id}</p>
@@ -347,7 +336,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (messagesList) {
             await loadMessages();
-            // Suscribirse a cambios en tiempo real (Realtime)
             supabase
                 .channel('messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${session.session.user.id}` }, (payload) => {
@@ -424,10 +412,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sendMessageForm = document.getElementById('send-message-form');
         const payButton = document.getElementById('pay-button');
 
-        actionTitle.textContent = action === 'rent' ? 'Alquilar Producto' : 'Comprar Producto';
-        productName.textContent = name || 'Producto desconocido';
-        productDescription.textContent = description || 'Sin descripción';
-        productPrice.textContent = pricePerDay.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+        if (actionTitle && productName && productDescription && productPrice) {
+            actionTitle.textContent = action === 'rent' ? 'Alquilar Producto' : 'Comprar Producto';
+            productName.textContent = name || 'Producto desconocido';
+            productDescription.textContent = description || 'Sin descripción';
+            productPrice.textContent = pricePerDay.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+        }
 
         if (sendMessageForm) {
             sendMessageForm.addEventListener('submit', async (e) => {
@@ -458,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 alert('Mensaje enviado con éxito al vendedor!');
                 sendMessageForm.style.display = 'none';
-                payButton.style.display = 'block';
+                if (payButton) payButton.style.display = 'block';
                 sendMessageForm.reset();
             });
         }
@@ -490,16 +480,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (error) {
                 console.error('Error al cargar entregas:', error.message);
-                deliveriesList.innerHTML = '<p>Error al cargar las entregas: ' + error.message + '</p>';
+                if (deliveriesList) deliveriesList.innerHTML = '<p>Error al cargar las entregas: ' + error.message + '</p>';
                 return;
             }
 
             if (data.length === 0) {
-                deliveriesList.innerHTML = '<p>No hay entregas disponibles.</p>';
+                if (deliveriesList) deliveriesList.innerHTML = '<p>No hay entregas disponibles.</p>';
                 return;
             }
 
-            deliveriesList.innerHTML = data.map(delivery => `
+            if (deliveriesList) deliveriesList.innerHTML = data.map(delivery => `
                 <div class="delivery">
                     <p><strong>Producto:</strong> ${delivery.product_id}</p>
                     <p><strong>Tipo:</strong> ${delivery.type}</p>
@@ -532,92 +522,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         const productName = document.getElementById('product-name');
         const productDescription = document.getElementById('product-description');
         const productPrice = document.getElementById('product-price');
+        const payButton = document.getElementById('pay-button');
 
-        productName.textContent = name || 'Producto desconocido';
-        productDescription.textContent = description || 'Sin descripción';
+        if (actionTitle && productName && productDescription && productPrice) {
+            productName.textContent = name || 'Producto desconocido';
+            productDescription.textContent = description || 'Sin descripción';
 
-        let displayPrice;
-        if (action === 'rent') {
-            actionTitle.textContent = 'Alquilar Producto';
-            displayPrice = pricePerDay;
-        } else if (action === 'buy') {
-            actionTitle.textContent = 'Comprar Producto';
-            displayPrice = salePrice;
-        } else {
-            actionTitle.textContent = 'Error';
-            displayPrice = 0;
-            productPrice.textContent = 'Precio no disponible';
-            return;
+            let displayPrice;
+            if (action === 'rent') {
+                actionTitle.textContent = 'Alquilar Producto';
+                displayPrice = pricePerDay;
+            } else if (action === 'buy') {
+                actionTitle.textContent = 'Comprar Producto';
+                displayPrice = salePrice;
+            } else {
+                actionTitle.textContent = 'Error';
+                displayPrice = 0;
+                productPrice.textContent = 'Precio no disponible';
+                return;
+            }
+
+            productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
         }
 
-        productPrice.textContent = displayPrice.toLocaleString('es-CO', { style: 'currency', currency: 'COP' });
+        if (payButton) {
+            payButton.addEventListener('click', async () => {
+                const amount = displayPrice;
+                const reference = 'TUALKI-' + Date.now();
+                const currency = 'COP';
 
-        const payButton = document.getElementById('pay-button');
-        payButton.addEventListener('click', async () => {
-            const amount = displayPrice;
-            const reference = 'TUALKI-' + Date.now();
-            const currency = 'COP';
+                const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
+                const amountInCents = parseInt(amount) * 100;
+                const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(stringToSign);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-            // Clave de integridad
-            const integrityKey = 'test_integrity_Eeq1kYx2Lh6tiBzqN8FELuosI2iWhyGq';
+                const wompiCheckout = new WidgetCheckout({
+                    currency: 'COP',
+                    amountInCents: amountInCents,
+                    reference: reference,
+                    publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
+                    redirectUrl: 'https://tualki-web.vercel.app/index.html',
+                    signature: { integrity: signature }
+                });
 
-            // Concatenar los valores para la firma (reference + amountInCents + currency + integrityKey)
-            const amountInCents = parseInt(amount) * 100;
-            const stringToSign = `${reference}${amountInCents}${currency}${integrityKey}`;
+                wompiCheckout.open(async function (result) {
+                    console.log('Resultado de Wompi completo:', result);
 
-            // Generar la firma usando SHA-256
-            const encoder = new TextEncoder();
-            const data = encoder.encode(stringToSign);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    if (result && result.status === 'APPROVED') {
+                        alert('¡Pago exitoso!');
+                        console.log('Pago aprobado, guardando transacción...');
 
-            const wompiCheckout = new WidgetCheckout({
-                currency: 'COP',
-                amountInCents: amountInCents,
-                reference: reference,
-                publicKey: 'pub_test_EtTODv4mMOMQj2q8Xz3LzXSjtPWRnPeJ',
-                redirectUrl: 'https://tualki-web.vercel.app/index.html',
-                signature: {
-                    integrity: signature
-                }
-            });
+                        const { data: session } = await supabase.auth.getSession();
+                        if (session.session) {
+                            const { error } = await supabase
+                                .from('transactions')
+                                .insert({
+                                    buyer_id: session.session.user.id,
+                                    product_id: productId,
+                                    amount: amount,
+                                    type: action,
+                                    status: 'completed',
+                                    reference: reference,
+                                    created_at: new Date().toISOString()
+                                });
 
-            wompiCheckout.open(async function (result) {
-                console.log('Resultado de Wompi completo:', result);
-
-                if (result && result.status === 'APPROVED') {
-                    alert('¡Pago exitoso!');
-                    console.log('Pago aprobado, guardando transacción...');
-
-                    const { data: session } = await supabase.auth.getSession();
-                    if (session.session) {
-                        const { error } = await supabase
-                            .from('transactions')
-                            .insert({
-                                buyer_id: session.session.user.id,
-                                product_id: productId,
-                                amount: amount,
-                                type: action,
-                                status: 'completed',
-                                reference: reference,
-                                created_at: new Date().toISOString()
-                            });
-
-                        if (error) {
-                            console.error('Error al guardar la transacción:', error.message);
-                            alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
-                        } else {
-                            console.log('Transacción registrada con éxito');
-                            window.location.href = 'https://tualki-web.vercel.app/index.html';
+                            if (error) {
+                                console.error('Error al guardar la transacción:', error.message);
+                                alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
+                            } else {
+                                console.log('Transacción registrada con éxito');
+                                window.location.href = 'https://tualki-web.vercel.app/index.html';
+                            }
                         }
+                    } else {
+                        const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
+                        console.error(errorMessage);
+                        alert(errorMessage);
                     }
-                } else {
-                    const errorMessage = result?.status ? `Error en el pago: ${result.status}` : 'Error en el pago: Desconocido';
-                    console.error(errorMessage);
-                    alert(errorMessage);
-                }
+                });
             });
-        });
+        }
     }
 });
