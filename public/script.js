@@ -41,24 +41,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
         const productsList = document.getElementById('products-list');
         const searchBar = document.getElementById('search-bar');
-        const categoryFilter = document.getElementById('category-filter');
+        const maxPriceInput = document.getElementById('max-price');
+        const locationInput = document.getElementById('location-filter');
+        const categoryLinks = document.querySelectorAll('.categories-bar a');
+
+        let currentFilter = 'all';
+        let userFavorites = new Set();
+
+        const loadFavorites = async () => {
+            const { data: favorites, error } = await supabase
+                .from('favorites')
+                .select('product_id')
+                .eq('user_id', session.session.user.id);
+            if (error) {
+                console.error('Error al cargar favoritos:', error.message);
+                alert('Error al cargar favoritos: ' + error.message);
+                return;
+            }
+            userFavorites = new Set(favorites.map(fav => fav.product_id));
+        };
+
+        const toggleFavorite = async (productId, button) => {
+            try {
+                const isFavorited = userFavorites.has(productId);
+                if (isFavorited) {
+                    const { error } = await supabase
+                        .from('favorites')
+                        .delete()
+                        .eq('user_id', session.session.user.id)
+                        .eq('product_id', productId);
+                    if (error) {
+                        throw new Error('Error al quitar favorito: ' + error.message);
+                    }
+                    userFavorites.delete(productId);
+                    button.classList.remove('favorited');
+                    alert('Producto eliminado de favoritos.');
+                } else {
+                    const { error } = await supabase
+                        .from('favorites')
+                        .insert({ user_id: session.session.user.id, product_id: productId });
+                    if (error) {
+                        throw new Error('Error al añadir favorito: ' + error.message);
+                    }
+                    userFavorites.add(productId);
+                    button.classList.add('favorited');
+                    alert('Producto añadido a favoritos.');
+                }
+                if (currentFilter === 'favorites') {
+                    loadProducts();
+                }
+            } catch (error) {
+                console.error(error.message);
+                alert(error.message);
+            }
+        };
 
         const loadProducts = async () => {
             let query = supabase.from('products').select('*');
 
             const searchTerm = searchBar.value.toLowerCase();
-            const category = categoryFilter.value;
+            const maxPrice = maxPriceInput.value ? parseFloat(maxPriceInput.value) : null;
+            const location = locationInput.value.toLowerCase();
 
             if (searchTerm) {
                 query = query.ilike('name', `%${searchTerm}%`);
             }
-
-            if (category) {
-                query = query.eq('category', category);
+            if (maxPrice) {
+                query = query.lte('price_per_day', maxPrice);
+            }
+            if (location) {
+                query = query.ilike('location', `%${location}%`);
+            }
+            if (currentFilter === 'favorites') {
+                query = query.in('id', Array.from(userFavorites));
+            } else if (currentFilter === 'recent') {
+                query = query.order('created_at', { ascending: false });
+            } else if (currentFilter !== 'all' && currentFilter !== 'more') {
+                query = query.eq('category', currentFilter);
             }
 
             const { data: products, error } = await query;
-            console.log('Datos de productos:', products, 'Error:', error); // Log para depuración
+            console.log('Datos de productos:', products, 'Error:', error);
 
             if (error) {
                 console.error('Error al cargar productos:', error.message);
@@ -73,26 +136,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             productsList.innerHTML = products.map(product => {
                 const photoUrl = product.photos && product.photos.length > 0 ? product.photos[0] : null;
+                const isFavorited = userFavorites.has(product.id);
                 return `
                     <div class="product">
-                        ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image">` : '<p>No image available</p>'}
+                        <button class="favorite-button ${isFavorited ? 'favorited' : ''}" data-product-id="${product.id}">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                        </button>
+                        ${photoUrl ? `<img src="${photoUrl}" alt="${product.name}" class="product-image">` : '<p>Sin imagen</p>'}
                         <div class="details">
                             <h3>${product.name}</h3>
                             <p>${product.description}</p>
-                            <p class="rental-price">Precio por día: ${product.price_per_day} COP</p>
-                            ${product.sale_price ? `<p class="sale-price">Precio de venta (opcional): ${product.sale_price} COP</p>` : ''}
-                            <a href="rent.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}&seller_id=${product.user_id}" class="button">Alquilar</a>
-                            ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}" class="secondary-button">Comprar</a>` : ''}
+                            <p class="rental-price">Precio por día: $${product.price_per_day.toLocaleString('es-CO')} COP</p>
+                            ${product.sale_price ? `<p class="sale-price">Precio de venta: $${product.sale_price.toLocaleString('es-CO')} COP</p>` : ''}
+                            <p>Ubicación: ${product.location || 'No especificada'}</p>
+                            <p>Categoría: ${product.category || 'Sin categoría'}</p>
+                            <a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price || ''}&action=rent&product_id=${product.id}&seller_id=${product.user_id}" class="button">Alquilar</a>
+                            ${product.sale_price ? `<a href="pay.html?name=${encodeURIComponent(product.name)}&description=${encodeURIComponent(product.description)}&price_per_day=${product.price_per_day}&sale_price=${product.sale_price}&action=buy&product_id=${product.id}&seller_id=${product.user_id}" class="secondary-button">Comprar</a>` : ''}
                         </div>
                     </div>
                 `;
             }).join('');
+
+            // Añadir evento a los botones de favoritos después de renderizar
+            document.querySelectorAll('.favorite-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const productId = button.getAttribute('data-product-id');
+                    toggleFavorite(productId, button);
+                });
+            });
         };
 
         if (productsList) {
-            await loadProducts();
+            await loadFavorites();
+            loadProducts();
             searchBar.addEventListener('input', loadProducts);
-            categoryFilter.addEventListener('change', loadProducts);
+            maxPriceInput.addEventListener('input', loadProducts);
+            locationInput.addEventListener('input', loadProducts);
+
+            categoryLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    categoryLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    currentFilter = link.getAttribute('data-filter');
+                    loadProducts();
+                });
+            });
         }
     }
 
@@ -493,7 +584,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             wompiCheckout.open(async function (result) {
-                console.log('Resultado de Wompi completo:', result); // Log detallado del resultado
+                console.log('Resultado de Wompi completo:', result);
 
                 if (result && result.status === 'APPROVED') {
                     alert('¡Pago exitoso!');
@@ -518,7 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             alert('Pago exitoso, pero hubo un error al registrar la transacción: ' + error.message);
                         } else {
                             console.log('Transacción registrada con éxito');
-                            window.location.href = 'https://tualki-web.vercel.app/index.html'; // Redirección manual después de guardar
+                            window.location.href = 'https://tualki-web.vercel.app/index.html';
                         }
                     }
                 } else {
