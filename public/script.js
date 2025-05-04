@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     description,
                     category,
                     price_per_day: rentalType !== 'sell' ? pricePerDay : null,
-                    sale_price: rentalType === 'sell' || (rentalType === 'alquiler y venta' && salePrice) ? salePrice : null,
+                    sale_price: rentalType === 'sell' || (rentalType === 'rent_sell' && salePrice) ? salePrice : null,
                     rental_type: rentalType,
                     photos: photoUrls.length > 0 ? photoUrls : null,
                     location: location
@@ -431,6 +431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sellerName = document.getElementById('seller-name');
         const sellerReviews = document.getElementById('seller-reviews');
         const sellerRating = document.getElementById('seller-rating');
+        const sendMessageForm = document.getElementById('send-message-form');
 
         if (actionTitle && productName && productDescription && productPrice && carouselInner && sellerName && sellerReviews && sellerRating) {
             productName.textContent = name || 'Producto desconocido';
@@ -478,6 +479,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        if (sendMessageForm) {
+            sendMessageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const messageContent = document.getElementById('message-content').value;
+                if (!messageContent) {
+                    alert('Por favor, escribe un mensaje al vendedor.');
+                    return;
+                }
+
+                const { data: sender, error: senderError } = await supabase.auth.getSession();
+                if (senderError || !sender.session) {
+                    alert('Error de sesión. Inicia sesión nuevamente.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const { error: messageError } = await supabase
+                    .from('messages')
+                    .insert({
+                        sender_id: sender.session.user.id,
+                        receiver_id: sellerId,
+                        content: messageContent,
+                        product_id: productId,
+                        created_at: new Date().toISOString()
+                    });
+
+                if (messageError) {
+                    console.error('Error al enviar mensaje:', messageError.message);
+                    alert('Error al enviar mensaje: ' + messageError.message);
+                    return;
+                }
+
+                alert('Mensaje enviado al vendedor. Ahora puedes proceder con el pago.');
+                sendMessageForm.style.display = 'none';
+                payButton.style.display = 'block';
+            });
+        }
+
         if (payButton) {
             payButton.addEventListener('click', async () => {
                 if (!session?.session) {
@@ -490,7 +529,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                const amount = displayPrice;
+                const amount = action === 'rent' ? pricePerDay : salePrice;
                 const commission = amount * 0.05; // 5% de comisión
                 const finalAmount = amount + commission;
                 const reference = 'TUALKI-' + Date.now();
@@ -547,16 +586,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             });
-        }
-
-        function moveCarousel(direction) {
-            const inner = document.getElementById('carousel-inner');
-            let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
-            const items = inner.querySelectorAll('.carousel-item').length;
-            currentTranslate += direction * 100;
-            if (currentTranslate > 0) currentTranslate = 0;
-            if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
-            inner.style.transform = `translateX(${currentTranslate}%)`;
         }
     }
 
@@ -628,12 +657,24 @@ function closeCustomAlert() {
 window.alert = showCustomAlert;
 
 function moveCarousel(button, direction) {
-    const carousel = button.parentElement;
-    const inner = carousel.querySelector('.carousel-inner');
-    let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
-    const items = carousel.querySelectorAll('.carousel-item').length;
-    currentTranslate += direction * 100;
-    if (currentTranslate > 0) currentTranslate = 0;
-    if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
-    inner.style.transform = `translateX(${currentTranslate}%)`;
+    if (typeof button === 'number') {
+        // Handle the case where direction is passed directly (from pay.html)
+        const inner = document.getElementById('carousel-inner');
+        let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
+        const items = inner.querySelectorAll('.carousel-item').length;
+        currentTranslate += button * 100; // button is the direction in this case
+        if (currentTranslate > 0) currentTranslate = 0;
+        if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
+        inner.style.transform = `translateX(${currentTranslate}%)`;
+    } else {
+        // Existing logic for index.html
+        const carousel = button.parentElement;
+        const inner = carousel.querySelector('.carousel-inner');
+        let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
+        const items = carousel.querySelectorAll('.carousel-item').length;
+        currentTranslate += direction * 100;
+        if (currentTranslate > 0) currentTranslate = 0;
+        if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
+        inner.style.transform = `translateX(${currentTranslate}%)`;
+    }
 }
