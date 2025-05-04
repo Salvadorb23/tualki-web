@@ -737,4 +737,8 @@ function moveCarousel(button, direction) {
         let currentTranslate = parseInt(inner.style.transform.replace(/translateX\((.*)%\)/, '$1')) || 0;
         const items = carousel.querySelectorAll('.carousel-item').length;
         currentTranslate += direction * 100;
-        if (
+        if (currentTranslate > 0) currentTranslate = 0;
+        if (currentTranslate < -100 * (items - 1)) currentTranslate = -100 * (items - 1);
+        inner.style.transform = `translateX(${currentTranslate}%)`;
+    }
+}
